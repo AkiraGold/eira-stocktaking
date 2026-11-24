@@ -9,19 +9,33 @@ export function getAttachmentDownloadUrl(attachId) {
 
 export function useItemAttachments(rmId) {
   const [attachments, setAttachments] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => Boolean(rmId && isAuthenticated()));
   const [error, setError] = useState(null);
   const [mutating, setMutating] = useState(false);
+  const [prevRmId, setPrevRmId] = useState(rmId);
+
+  if (rmId !== prevRmId) {
+    setPrevRmId(rmId);
+    if (!rmId || !isAuthenticated()) {
+      setAttachments([]);
+      setLoading(false);
+      setError(null);
+    } else {
+      setAttachments([]);
+      setLoading(true);
+      setError(null);
+    }
+  }
 
   const fetchAttachments = useCallback(() => {
     if (!rmId || !isAuthenticated()) {
       setAttachments([]);
       setLoading(false);
-      return;
+      return Promise.resolve();
     }
     setLoading(true);
     setError(null);
-    fetch(`/api/objects/${rmId}/attachments`, {
+    return fetch(`/api/objects/${rmId}/attachments`, {
       method: "GET",
       headers: getAuthHeadersSafe(),
     })
@@ -41,8 +55,17 @@ export function useItemAttachments(rmId) {
   }, [rmId]);
 
   useEffect(() => {
-    fetchAttachments();
-  }, [fetchAttachments]);
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      if (!rmId || !isAuthenticated()) return;
+      await fetchAttachments();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchAttachments, rmId]);
 
   const uploadAttachment = useCallback(
     async (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getAuthHeadersSafe, isAuthenticated } from '@/utils/token';
 import { mergeFeedPageIntoItems, parsePagedFeedPage } from '@/utils/feedPagination';
 import { useSelectedInventura } from '@/hooks/useSelectedInventura';
@@ -70,7 +70,7 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
     const getLocation = useGetLocation();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedItem, setSelectedItem] = useState(null);
-    const [filterLocation, setFilterLocation] = useState(null);
+    const [filterLocation, setFilterLocation] = useState(() => getLocation() ?? null);
     const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
     const [sortBy, setSortBy] = useState('id');
     const [sortOrder, setSortOrder] = useState('asc');
@@ -82,7 +82,6 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
     const [total, setTotal] = useState(0);
     const [hasMoreNext, setHasMoreNext] = useState(false);
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const lastQueryKeyRef = useRef('');
 
     const excludeEventId = useMemo(() => {
         const raw = selectedInventura?.id;
@@ -90,12 +89,20 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
         return Number.isFinite(n) && n > 0 ? n : null;
     }, [selectedInventura?.id]);
 
-    useEffect(() => {
-        const stored = getLocation();
-        if (stored) {
-            setFilterLocation(stored);
+    const canFetch = isOpen && excludeEventId != null && isAuthenticated();
+    const [prevCanFetch, setPrevCanFetch] = useState(canFetch);
+    if (canFetch !== prevCanFetch) {
+        setPrevCanFetch(canFetch);
+        if (!canFetch) {
+            setBaseItems([]);
+            setLoading(false);
+            setLoadingMore(false);
+            setError(null);
+            setPage(0);
+            setTotal(0);
+            setHasMoreNext(false);
         }
-    }, [getLocation]);
+    }
 
     useEffect(() => {
         const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 400);
@@ -124,31 +131,24 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
         ]
     );
 
-    useEffect(() => {
-        if (!isOpen || excludeEventId == null || !isAuthenticated()) {
-            setBaseItems([]);
-            setLoading(false);
-            setLoadingMore(false);
-            setError(null);
+    const [prevQueryKey, setPrevQueryKey] = useState(queryKey);
+    if (canFetch && queryKey !== prevQueryKey) {
+        setPrevQueryKey(queryKey);
+        if (page !== 0) {
             setPage(0);
-            setTotal(0);
-            setHasMoreNext(false);
-            lastQueryKeyRef.current = '';
-            return undefined;
         }
+    }
 
-        const queryChanged = lastQueryKeyRef.current !== queryKey;
-        if (queryChanged) {
-            lastQueryKeyRef.current = queryKey;
-            if (page !== 0) {
-                setPage(0);
-                return undefined;
-            }
+    useEffect(() => {
+        if (!canFetch) {
+            return undefined;
         }
 
         const ac = new AbortController();
 
         (async () => {
+            await Promise.resolve();
+            if (ac.signal.aborted) return;
             if (page === 0) setLoading(true);
             else setLoadingMore(true);
             setError(null);
@@ -199,7 +199,7 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
             ac.abort();
         };
     }, [
-        isOpen,
+        canFetch,
         excludeEventId,
         page,
         queryKey,

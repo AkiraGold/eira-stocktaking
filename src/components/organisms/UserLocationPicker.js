@@ -5,22 +5,21 @@ import LocationPicker from "@/components/organisms/LocationPicker";
 export default function UserLocationPicker({ editMode = true, onChange, onModalOpen, onModalClose, label }) {
   const getLocation = useGetLocation();
   const setLocationStorage = useSetLocation();
-  const [location, setLocation] = useState(null);
+  const [location, setLocation] = useState(() => getLocation() ?? null);
   const onChangeRef = useRef(onChange);
+  const didNotifyMountRef = useRef(false);
 
   // Keep the ref up to date
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  // On mount, load from storage and notify parent
+  // Notify parent of stored location once (no setState)
   useEffect(() => {
-    const stored = getLocation();
-    if (stored) {
-      setLocation(stored);
-      if (onChangeRef.current) onChangeRef.current(stored);
-    }
-  }, [getLocation]);
+    if (didNotifyMountRef.current) return;
+    didNotifyMountRef.current = true;
+    if (location && onChangeRef.current) onChangeRef.current(location);
+  }, [location]);
 
   const handleChange = (loc) => {
     setLocation(loc);
@@ -38,4 +37,4 @@ export default function UserLocationPicker({ editMode = true, onChange, onModalO
       onModalClose={onModalClose}
     />
   );
-} 
+}

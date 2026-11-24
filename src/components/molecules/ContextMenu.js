@@ -90,11 +90,14 @@ export function ContextButton({ children }) {
 
   const close = () => setOpen(false);
 
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (!open) setPosition(null);
+  }
+
   useEffect(() => {
-    if (!open) {
-      setPosition(null);
-      return;
-    }
+    if (!open) return;
 
     const onPointerDown = (e) => {
       if (menuRef.current?.contains(e.target) || triggerRef.current?.contains(e.target)) return;

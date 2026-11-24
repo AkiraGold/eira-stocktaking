@@ -64,16 +64,26 @@ const ItemAttachmentsSection = forwardRef(function ItemAttachmentsSection(
     refetch();
   }, [refetch]);
 
-  useEffect(() => {
+  const [prevEditMode, setPrevEditMode] = useState(editMode);
+  const [prevRmId, setPrevRmId] = useState(rmId);
+  if (editMode !== prevEditMode) {
+    setPrevEditMode(editMode);
     if (!editMode) {
-      discardPending();
+      setPendingUploads([]);
+      setPendingDeleteIds(new Set());
     }
-  }, [editMode, discardPending]);
-
-  useEffect(() => {
+  }
+  if (rmId !== prevRmId) {
+    setPrevRmId(rmId);
     setPendingUploads([]);
     setPendingDeleteIds(new Set());
-  }, [rmId]);
+  }
+
+  useEffect(() => {
+    if (!editMode) {
+      refetch();
+    }
+  }, [editMode, refetch]);
 
   const commitPending = useCallback(
     async (overrideRmId) => {

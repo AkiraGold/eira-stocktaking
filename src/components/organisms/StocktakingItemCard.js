@@ -39,10 +39,13 @@ export default function StocktakingItemCard({
     enableLazyImageFetch,
   });
 
-  React.useEffect(() => {
+  const imageResetKey = `${imageSrc ?? ""}::${item.id}`;
+  const [prevImageResetKey, setPrevImageResetKey] = React.useState(imageResetKey);
+  if (imageResetKey !== prevImageResetKey) {
+    setPrevImageResetKey(imageResetKey);
     setImageLoaded(false);
     setImageError(false);
-  }, [imageSrc, item.id]);
+  }
 
   const showImage = !compact && imageSrc && !imageError;
   const showLoadingPlaceholder = !compact && isWaitingForLazyImage;

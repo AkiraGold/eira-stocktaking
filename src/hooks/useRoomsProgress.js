@@ -67,16 +67,29 @@ async function fetchBuildingItems(eventId, buildingId, states) {
  * Pracovní režim: jen počet zkontrolovaných; jen místnosti, kde už něco zkontrolováno je.
  */
 export function useRoomsProgress(eventId, buildingId, workflow) {
-    const [state, setState] = useState({ loading: false, rooms: [], error: null });
+    const depsKey = `${eventId ?? ""}|${buildingId ?? ""}|${workflow ? 1 : 0}`;
+    const [state, setState] = useState(() => ({
+        loading: Boolean(eventId && buildingId),
+        rooms: [],
+        error: null,
+    }));
+    const [prevDepsKey, setPrevDepsKey] = useState(depsKey);
 
-    useEffect(() => {
+    if (depsKey !== prevDepsKey) {
+        setPrevDepsKey(depsKey);
         if (!eventId || !buildingId) {
             setState({ loading: false, rooms: [], error: null });
-            return undefined;
+        } else {
+            setState((s) => ({ ...s, loading: true, error: null }));
         }
+    }
+
+    useEffect(() => {
+        if (!eventId || !buildingId) return undefined;
         let cancelled = false;
-        setState((s) => ({ ...s, loading: true, error: null }));
         (async () => {
+            await Promise.resolve();
+            if (cancelled) return;
             try {
                 const states = workflow
                     ? INVENTORY_STATES_WITHOUT_UNCHECKED

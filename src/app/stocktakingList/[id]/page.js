@@ -234,23 +234,33 @@ function StocktakingListContent() {
             return;
         }
 
-        setScannedQr(null);
+        let cancelled = false;
+        (async () => {
+            await Promise.resolve();
+            if (cancelled) return;
 
-        if (apiItem) {
-            setScannedItem(apiItem);
+            setScannedQr(null);
 
-            if (apiItem.location && location && apiItem.location.room !== location.room) {
-                setMoveItem(apiItem);
-                setMoveNewLocation(location);
-                setIsMoveModalOpen(true);
+            if (apiItem) {
+                setScannedItem(apiItem);
+
+                if (apiItem.location && location && apiItem.location.room !== location.room) {
+                    setMoveItem(apiItem);
+                    setMoveNewLocation(location);
+                    setIsMoveModalOpen(true);
+                    setIsPreviewModalOpen(false);
+                }
+            } else {
+                setPendingCreateQr(normalizedScannedQr);
                 setIsPreviewModalOpen(false);
+                setIsNotInInventoryModalOpen(true);
+                lookupOutsideInventura(normalizedScannedQr);
             }
-        } else {
-            setPendingCreateQr(normalizedScannedQr);
-            setIsPreviewModalOpen(false);
-            setIsNotInInventoryModalOpen(true);
-            lookupOutsideInventura(normalizedScannedQr);
-        }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, [apiItem, apiLoading, apiError, scannedQr, resolvedQr, location, lookupOutsideInventura]);
 
     // Rychlé nastavení stavu přímo v seznamu (bez okna „Hotovo“), s možností vrátit zpět.

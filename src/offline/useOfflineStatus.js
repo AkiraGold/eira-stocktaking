@@ -13,7 +13,6 @@ export function useOfflineStatus() {
     useEffect(() => {
         const onChange = (e) => setStatus(e.detail || getOfflineStatus());
         window.addEventListener(OFFLINE_STATUS_EVENT, onChange);
-        setStatus(getOfflineStatus());
         return () => window.removeEventListener(OFFLINE_STATUS_EVENT, onChange);
     }, []);
     return status;

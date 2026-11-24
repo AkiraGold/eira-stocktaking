@@ -9,8 +9,8 @@ const roomsCache = new Map();
 const roomsInFlight = new Map();
 
 export function useBuildings() {
-    const [buildings, setBuildings] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [buildings, setBuildings] = useState(() => buildingsCache || []);
+    const [loading, setLoading] = useState(() => isAuthenticated() && !buildingsCache);
     const [error, setError] = useState(null);
 
     const fetchBuildings = useCallback(async () => {
@@ -72,16 +72,48 @@ export function useBuildings() {
     }, []);
 
     useEffect(() => {
-        fetchBuildings();
+        let cancelled = false;
+        (async () => {
+            await Promise.resolve();
+            if (cancelled) return;
+            await fetchBuildings();
+        })();
+        return () => {
+            cancelled = true;
+        };
     }, [fetchBuildings]);
 
     return { buildings, loading, error, refetch: fetchBuildings };
 }
 
 export function useStoreys(buildingId) {
-    const [storeys, setStoreys] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const cacheKey = buildingId != null ? String(buildingId) : null;
+    const [storeys, setStoreys] = useState(() =>
+        cacheKey && storeysCache.has(cacheKey) ? storeysCache.get(cacheKey) || [] : []
+    );
+    const [loading, setLoading] = useState(
+        () => Boolean(isAuthenticated() && buildingId && !(cacheKey && storeysCache.has(cacheKey)))
+    );
     const [error, setError] = useState(null);
+    const [prevBuildingId, setPrevBuildingId] = useState(buildingId);
+
+    if (buildingId !== prevBuildingId) {
+        setPrevBuildingId(buildingId);
+        const nextKey = buildingId != null ? String(buildingId) : null;
+        if (!isAuthenticated() || !buildingId) {
+            setStoreys([]);
+            setLoading(false);
+            setError(null);
+        } else if (nextKey && storeysCache.has(nextKey)) {
+            setStoreys(storeysCache.get(nextKey) || []);
+            setLoading(false);
+            setError(null);
+        } else {
+            setStoreys([]);
+            setLoading(true);
+            setError(null);
+        }
+    }
 
     const fetchStoreys = useCallback(async () => {
         if (!isAuthenticated() || !buildingId) {
@@ -90,18 +122,18 @@ export function useStoreys(buildingId) {
             return;
         }
 
-        const cacheKey = String(buildingId);
-        if (storeysCache.has(cacheKey)) {
-            setStoreys(storeysCache.get(cacheKey) || []);
+        const key = String(buildingId);
+        if (storeysCache.has(key)) {
+            setStoreys(storeysCache.get(key) || []);
             setLoading(false);
             return;
         }
 
-        if (storeysInFlight.has(cacheKey)) {
+        if (storeysInFlight.has(key)) {
             setLoading(true);
             setError(null);
             try {
-                const sharedData = await storeysInFlight.get(cacheKey);
+                const sharedData = await storeysInFlight.get(key);
                 setStoreys(sharedData || []);
             } catch (err) {
                 setError(err);
@@ -129,13 +161,13 @@ export function useStoreys(buildingId) {
                 const data = await res.json();
                 return data || [];
             })();
-            storeysInFlight.set(cacheKey, requestPromise);
+            storeysInFlight.set(key, requestPromise);
             const data = await requestPromise;
-            storeysInFlight.delete(cacheKey);
-            storeysCache.set(cacheKey, data);
+            storeysInFlight.delete(key);
+            storeysCache.set(key, data);
             setStoreys(data || []);
         } catch (err) {
-            storeysInFlight.delete(cacheKey);
+            storeysInFlight.delete(key);
             setError(err);
         } finally {
             setLoading(false);
@@ -143,16 +175,57 @@ export function useStoreys(buildingId) {
     }, [buildingId]);
 
     useEffect(() => {
-        fetchStoreys();
+        let cancelled = false;
+        (async () => {
+            await Promise.resolve();
+            if (cancelled) return;
+            await fetchStoreys();
+        })();
+        return () => {
+            cancelled = true;
+        };
     }, [fetchStoreys]);
 
     return { storeys, loading, error, refetch: fetchStoreys };
 }
 
 export function useRooms(buildingId, storeyId) {
-    const [rooms, setRooms] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const cacheKey =
+        buildingId != null && storeyId != null ? `${buildingId}:${storeyId}` : null;
+    const [rooms, setRooms] = useState(() =>
+        cacheKey && roomsCache.has(cacheKey) ? roomsCache.get(cacheKey) || [] : []
+    );
+    const [loading, setLoading] = useState(
+        () =>
+            Boolean(
+                isAuthenticated() &&
+                    buildingId &&
+                    storeyId &&
+                    !(cacheKey && roomsCache.has(cacheKey))
+            )
+    );
     const [error, setError] = useState(null);
+    const [prevIds, setPrevIds] = useState(`${buildingId}:${storeyId}`);
+    const idsKey = `${buildingId}:${storeyId}`;
+
+    if (idsKey !== prevIds) {
+        setPrevIds(idsKey);
+        const nextKey =
+            buildingId != null && storeyId != null ? `${buildingId}:${storeyId}` : null;
+        if (!isAuthenticated() || !buildingId || !storeyId) {
+            setRooms([]);
+            setLoading(false);
+            setError(null);
+        } else if (nextKey && roomsCache.has(nextKey)) {
+            setRooms(roomsCache.get(nextKey) || []);
+            setLoading(false);
+            setError(null);
+        } else {
+            setRooms([]);
+            setLoading(true);
+            setError(null);
+        }
+    }
 
     const fetchRooms = useCallback(async () => {
         if (!isAuthenticated() || !buildingId || !storeyId) {
@@ -161,18 +234,18 @@ export function useRooms(buildingId, storeyId) {
             return;
         }
 
-        const cacheKey = `${buildingId}:${storeyId}`;
-        if (roomsCache.has(cacheKey)) {
-            setRooms(roomsCache.get(cacheKey) || []);
+        const key = `${buildingId}:${storeyId}`;
+        if (roomsCache.has(key)) {
+            setRooms(roomsCache.get(key) || []);
             setLoading(false);
             return;
         }
 
-        if (roomsInFlight.has(cacheKey)) {
+        if (roomsInFlight.has(key)) {
             setLoading(true);
             setError(null);
             try {
-                const sharedData = await roomsInFlight.get(cacheKey);
+                const sharedData = await roomsInFlight.get(key);
                 setRooms(sharedData || []);
             } catch (err) {
                 setError(err);
@@ -200,13 +273,13 @@ export function useRooms(buildingId, storeyId) {
                 const data = await res.json();
                 return data || [];
             })();
-            roomsInFlight.set(cacheKey, requestPromise);
+            roomsInFlight.set(key, requestPromise);
             const data = await requestPromise;
-            roomsInFlight.delete(cacheKey);
-            roomsCache.set(cacheKey, data);
+            roomsInFlight.delete(key);
+            roomsCache.set(key, data);
             setRooms(data || []);
         } catch (err) {
-            roomsInFlight.delete(cacheKey);
+            roomsInFlight.delete(key);
             setError(err);
         } finally {
             setLoading(false);
@@ -214,7 +287,15 @@ export function useRooms(buildingId, storeyId) {
     }, [buildingId, storeyId]);
 
     useEffect(() => {
-        fetchRooms();
+        let cancelled = false;
+        (async () => {
+            await Promise.resolve();
+            if (cancelled) return;
+            await fetchRooms();
+        })();
+        return () => {
+            cancelled = true;
+        };
     }, [fetchRooms]);
 
     return { rooms, loading, error, refetch: fetchRooms };

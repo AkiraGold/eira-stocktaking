@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { clearAllInventuraEphemeralCaches } from '@/utils/inventuraCache';
 import { notifySelectedInventuraChanged } from '@/utils/inventuraDisplayMode';
 
@@ -8,24 +8,22 @@ function inventuraId(value) {
     return Number.isFinite(n) ? n : null;
 }
 
-export function useSelectedInventura() {
-    const [selectedInventura, setSelectedInventura] = useState(null);
-    const [ready, setReady] = useState(false);
-    const activeInventuraIdRef = useRef(null);
-
-    useEffect(() => {
+function readSelectedInventura() {
+    if (typeof window === 'undefined') return null;
+    try {
         const saved = localStorage.getItem('selectedInventura');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                setSelectedInventura(parsed);
-                activeInventuraIdRef.current = inventuraId(parsed);
-            } catch (e) {
-                console.error('Failed to parse selected inventura:', e);
-            }
-        }
-        setReady(true);
-    }, []);
+        if (!saved) return null;
+        return JSON.parse(saved);
+    } catch (e) {
+        console.error('Failed to parse selected inventura:', e);
+        return null;
+    }
+}
+
+export function useSelectedInventura() {
+    const [selectedInventura, setSelectedInventura] = useState(readSelectedInventura);
+    const [ready] = useState(true);
+    const activeInventuraIdRef = useRef(inventuraId(selectedInventura));
 
     const selectInventura = (inventura) => {
         const nextId = inventuraId(inventura);

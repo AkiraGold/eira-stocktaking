@@ -35,23 +35,38 @@ async function countItems(eventId, states, location) {
  * V režimu Pracovní se nezjišťuje, kolik předmětů se očekává (Nezkontrolováno).
  */
 export function useInventuraProgress(eventId, location, displayMode) {
-    const [progress, setProgress] = useState({ loading: true, error: null, byState: {}, room: null });
     const room = location?.room || null;
     const storey = location?.storey || null;
     const building = location?.building || null;
+    const depsKey = `${eventId ?? ""}|${displayMode}|${room}|${storey}|${building}`;
 
-    useEffect(() => {
+    const [progress, setProgress] = useState(() => ({
+        loading: Boolean(eventId),
+        error: null,
+        byState: {},
+        room: null,
+    }));
+    const [prevDepsKey, setPrevDepsKey] = useState(depsKey);
+
+    if (depsKey !== prevDepsKey) {
+        setPrevDepsKey(depsKey);
         if (!eventId) {
             setProgress({ loading: false, error: null, byState: {}, room: null });
-            return;
+        } else {
+            setProgress((p) => ({ ...p, loading: true, error: null }));
         }
+    }
+
+    useEffect(() => {
+        if (!eventId) return;
         let cancelled = false;
         const workflow = displayMode === INVENTORY_DISPLAY_MODE.WORKFLOW;
         const states = workflow ? INVENTORY_STATES_WITHOUT_UNCHECKED : [...INVENTORY_STATES_WITHOUT_UNCHECKED, INVENTORY_STATES.UNCHECKED];
         const loc = room || storey || building ? { room, storey, building } : null;
 
-        setProgress((p) => ({ ...p, loading: true, error: null }));
         (async () => {
+            await Promise.resolve();
+            if (cancelled) return;
             try {
                 const counts = await Promise.all(states.map((s) => countItems(eventId, [s], null)));
                 const byState = Object.fromEntries(states.map((s, i) => [s, counts[i]]));

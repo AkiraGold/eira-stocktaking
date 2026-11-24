@@ -3,25 +3,39 @@ import { getAuthHeadersSafe, isAuthenticated } from '@/utils/token';
 
 export function useStocktakingItem(id, eventId) {
   const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(id && isAuthenticated()));
   const [error, setError] = useState(null);
+  const [prevKey, setPrevKey] = useState(`${id ?? ''}:${eventId ?? ''}`);
+  const key = `${id ?? ''}:${eventId ?? ''}`;
+
+  if (key !== prevKey) {
+    setPrevKey(key);
+    if (!id || !isAuthenticated()) {
+      setItem(null);
+      setLoading(false);
+      setError(null);
+    } else {
+      setItem(null);
+      setLoading(true);
+      setError(null);
+    }
+  }
 
   const fetchItem = useCallback(() => {
-    if (!id) return;
-    
-    // Don't make API call if not authenticated
+    if (!id) return Promise.resolve();
+
     if (!isAuthenticated()) {
       setLoading(false);
-      return;
+      return Promise.resolve();
     }
-    
+
     setLoading(true);
     const body = { id };
     if (eventId) {
       body.eventId = eventId;
     }
 
-    fetch(`/api/objects/by-id`, {
+    return fetch(`/api/objects/by-id`, {
       method: 'POST',
       headers: getAuthHeadersSafe(),
       body: JSON.stringify(body)
@@ -42,44 +56,54 @@ export function useStocktakingItem(id, eventId) {
   }, [id, eventId]);
 
   useEffect(() => {
-    fetchItem();
-  }, [fetchItem]);
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      if (!id || !isAuthenticated()) return;
+      await fetchItem();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchItem, id]);
 
   return [item, loading, error, fetchItem];
 }
 
 export function useInventoryObjectByQr(qr, eventId) {
+  const normalizedQr = qr ? String(qr).trim() : '';
   const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => Boolean(normalizedQr));
   const [error, setError] = useState(null);
   const [resolvedQr, setResolvedQr] = useState(null);
+  const [prevKey, setPrevKey] = useState(`${normalizedQr}:${eventId ?? ''}`);
+  const key = `${normalizedQr}:${eventId ?? ''}`;
+
+  if (key !== prevKey) {
+    setPrevKey(key);
+    if (!normalizedQr) {
+      setItem(null);
+      setLoading(false);
+      setError(null);
+      setResolvedQr(null);
+    } else {
+      setItem(null);
+      setLoading(true);
+      setError(null);
+      setResolvedQr(null);
+    }
+  }
 
   useEffect(() => {
-    if (!qr) {
-      setLoading(false);
-      setResolvedQr(null);
-      return;
-    }
-    const normalizedQr = String(qr).trim();
-    if (!normalizedQr) {
-      setLoading(false);
-      setResolvedQr(null);
-      return;
-    }
-    
-    setItem(null);
-    setLoading(true);
-    setError(null);
-    setResolvedQr(null);
-    
+    if (!normalizedQr) return;
+
+    const abortController = new AbortController();
     const body = { qr: normalizedQr };
     if (eventId) {
       body.eventId = eventId;
     }
-    
-    // Create AbortController for this request
-    const abortController = new AbortController();
-    
+
     fetch(`/api/objects/by-qr`, {
       method: 'POST',
       headers: getAuthHeadersSafe(),
@@ -94,7 +118,6 @@ export function useInventoryObjectByQr(qr, eventId) {
         return res.json();
       })
       .then((data) => {
-        // Only update state if this request hasn't been aborted
         if (!abortController.signal.aborted) {
           setItem(data);
           setError(null);
@@ -102,7 +125,6 @@ export function useInventoryObjectByQr(qr, eventId) {
         }
       })
       .catch((err) => {
-        // Only update error if this request hasn't been aborted
         if (!abortController.signal.aborted) {
           setItem(null);
           setError(err);
@@ -110,18 +132,15 @@ export function useInventoryObjectByQr(qr, eventId) {
         }
       })
       .finally(() => {
-        // Only update loading if this request hasn't been aborted
         if (!abortController.signal.aborted) {
           setLoading(false);
         }
       });
-      
-    // Return cleanup function to abort the request
+
     return () => {
       abortController.abort();
-      setLoading(false);
     };
-  }, [qr, eventId]);
+  }, [normalizedQr, eventId]);
 
   return [item, loading, error, resolvedQr];
 }

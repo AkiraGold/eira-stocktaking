@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { useCreateInventoryObject } from "@/hooks/useStocktakingItems";
 import ActionFeedbackModal from "@/components/molecules/ActionFeedbackModal";
 import ActionLoadingModal from "@/components/molecules/ActionLoadingModal";
@@ -82,8 +82,7 @@ export default function NewItemForm({
   const { createItem, loading, error } = useCreateInventoryObject(stocktakingId || null);
   const { checkAvailability } = useInventoryIdentifiersCheck();
 
-  useEffect(() => {
-    if (prefillDone) return;
+  if (!prefillDone) {
     const qrParam = searchParams.get("qr");
     const userLoc = getLocation();
     setEditItem((prev) => ({
@@ -92,7 +91,7 @@ export default function NewItemForm({
       ...(userLoc ? { location: userLoc } : {}),
     }));
     setPrefillDone(true);
-  }, [searchParams, getLocation, prefillDone]);
+  }
 
   const showActionModal = (title, message, success) => {
     setActionModalContent({ title, message, success });

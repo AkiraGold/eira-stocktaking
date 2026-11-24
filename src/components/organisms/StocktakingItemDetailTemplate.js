@@ -1,4 +1,4 @@
-import React, { useRef, useLayoutEffect, useEffect, useState } from "react";
+import React, { useRef, useLayoutEffect, useState } from "react";
 import PictureInput from "@/components/molecules/PictureInput";
 import CardContainer from "@/components/atoms/CardContainer";
 import DetailCardRow from "@/components/atoms/DetailCardRow";
@@ -29,7 +29,11 @@ function resolveCheckedBy(item) {
 /** Poznámka k inventuře upravitelná přímo v detailu, bez přepnutí do režimu Upravit. */
 function InlineNote({ value, onSave, saving }) {
   const [draft, setDraft] = useState(value || "");
-  useEffect(() => setDraft(value || ""), [value]);
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setDraft(value || "");
+  }
   const dirty = (draft || "") !== (value || "");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

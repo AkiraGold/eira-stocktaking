@@ -7,15 +7,13 @@ import TextInput from "@/components/atoms/TextInput";
 import CardContainer from "@/components/atoms/CardContainer";
 
 export default function ErrorPage() {
-  const [showError, setShowError] = useState(false);
+  const [showError] = useState(() => !isAuthenticated());
   const [token, setToken] = useState("");
   const [isSettingToken, setIsSettingToken] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      setShowError(true);
-    } else {
+    if (isAuthenticated()) {
       router.push('/');
     }
   }, [router]);
@@ -118,4 +116,4 @@ export default function ErrorPage() {
       </div>
     </div>
   );
-} 
+}

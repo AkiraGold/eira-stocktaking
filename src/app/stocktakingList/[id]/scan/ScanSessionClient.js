@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useUpdateInventoryObject, useInventoryObjectByQr } from "@/hooks/useStocktakingItems";
 import { useOutsideInventuraQrItem } from "@/hooks/useOutsideInventuraQrItem";
@@ -95,7 +95,9 @@ export default function ScanSessionClient() {
     });
 
     const feedItemsRef = useRef(feedItems);
-    feedItemsRef.current = feedItems;
+    useLayoutEffect(() => {
+        feedItemsRef.current = feedItems;
+    }, [feedItems]);
 
     const [viewMode, setViewMode] = useState(() => readScanListViewMode());
 
@@ -126,9 +128,13 @@ export default function ScanSessionClient() {
     const { scanAutoMarkFound, scanFeedback } = useSettings();
     const { online } = useOfflineStatus();
     const scanFeedbackRef = useRef(scanFeedback);
-    scanFeedbackRef.current = scanFeedback;
+    useLayoutEffect(() => {
+        scanFeedbackRef.current = scanFeedback;
+    }, [scanFeedback]);
     const scanAutoMarkFoundRef = useRef(scanAutoMarkFound);
-    scanAutoMarkFoundRef.current = scanAutoMarkFound;
+    useLayoutEffect(() => {
+        scanAutoMarkFoundRef.current = scanAutoMarkFound;
+    }, [scanAutoMarkFound]);
 
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
     const [moveItem, setMoveItem] = useState(null);
@@ -270,7 +276,9 @@ export default function ScanSessionClient() {
     }, [scanSheet, clearSheetTimer, updateItem, stocktakingId, patchFeedItem, refreshFeed, showActionModal]);
 
     const scanSheetRef = useRef(scanSheet);
-    scanSheetRef.current = scanSheet;
+    useLayoutEffect(() => {
+        scanSheetRef.current = scanSheet;
+    }, [scanSheet]);
 
     const handleScan = useCallback((scannedValue) => {
         // Stejný kód znovu před kamerou nemá zavřít otevřený panel s volbou.
@@ -334,50 +342,66 @@ export default function ScanSessionClient() {
             return;
         }
         if (resolvedQr !== normalizedScannedQr) {
-            setScanPending(false);
-            return;
-        }
-
-        setScannedQr(null);
-        setScanPending(false);
-
-        if (apiItem) {
-            setLastScannedItem(apiItem);
-            const loc = getLocation();
-            const locationMismatch = Boolean(
-                apiItem.location &&
-                    loc?.room != null &&
-                    loc.room !== "" &&
-                    String(apiItem.location.room) !== String(loc.room)
-            );
-            const feedMatch = feedItemsRef.current.find((i) => Number(i.id) === Number(apiItem.id));
-            const effectiveState = apiItem.state ?? feedMatch?.state;
-            const sheetItem = {
-                ...apiItem,
-                state: effectiveState ?? apiItem.state,
-                image: apiItem.image ?? feedMatch?.image,
-                lastCheck: apiItem.lastCheck ?? feedMatch?.lastCheck,
-                note: apiItem.note ?? feedMatch?.note,
-                description: apiItem.description ?? feedMatch?.description,
+            let cancelledStale = false;
+            (async () => {
+                await Promise.resolve();
+                if (!cancelledStale) setScanPending(false);
+            })();
+            return () => {
+                cancelledStale = true;
             };
-            if (locationMismatch) {
-                feedback("warning");
-                setScanSheet({ kind: "move", item: sheetItem, loc, qr: normalizedScannedQr });
-            } else if (isFoundState(effectiveState) || isMovedState(effectiveState) || isNewState(effectiveState)) {
-                feedback("warning");
-                setScanSheet({ kind: "checked", item: sheetItem, qr: normalizedScannedQr });
-            } else if (scanAutoMarkFoundRef.current) {
-                markFoundFromSheet(sheetItem);
-            } else {
-                feedback("success");
-                setScanSheet({ kind: "confirm", item: sheetItem, qr: normalizedScannedQr });
-            }
-        } else {
-            feedback("warning");
-            setPendingCreateQr(normalizedScannedQr);
-            setIsNotInInventoryModalOpen(true);
-            lookupOutsideInventura(normalizedScannedQr);
         }
+
+        let cancelled = false;
+        (async () => {
+            await Promise.resolve();
+            if (cancelled) return;
+
+            setScannedQr(null);
+            setScanPending(false);
+
+            if (apiItem) {
+                setLastScannedItem(apiItem);
+                const loc = getLocation();
+                const locationMismatch = Boolean(
+                    apiItem.location &&
+                        loc?.room != null &&
+                        loc.room !== "" &&
+                        String(apiItem.location.room) !== String(loc.room)
+                );
+                const feedMatch = feedItemsRef.current.find((i) => Number(i.id) === Number(apiItem.id));
+                const effectiveState = apiItem.state ?? feedMatch?.state;
+                const sheetItem = {
+                    ...apiItem,
+                    state: effectiveState ?? apiItem.state,
+                    image: apiItem.image ?? feedMatch?.image,
+                    lastCheck: apiItem.lastCheck ?? feedMatch?.lastCheck,
+                    note: apiItem.note ?? feedMatch?.note,
+                    description: apiItem.description ?? feedMatch?.description,
+                };
+                if (locationMismatch) {
+                    feedback("warning");
+                    setScanSheet({ kind: "move", item: sheetItem, loc, qr: normalizedScannedQr });
+                } else if (isFoundState(effectiveState) || isMovedState(effectiveState) || isNewState(effectiveState)) {
+                    feedback("warning");
+                    setScanSheet({ kind: "checked", item: sheetItem, qr: normalizedScannedQr });
+                } else if (scanAutoMarkFoundRef.current) {
+                    markFoundFromSheet(sheetItem);
+                } else {
+                    feedback("success");
+                    setScanSheet({ kind: "confirm", item: sheetItem, qr: normalizedScannedQr });
+                }
+            } else {
+                feedback("warning");
+                setPendingCreateQr(normalizedScannedQr);
+                setIsNotInInventoryModalOpen(true);
+                lookupOutsideInventura(normalizedScannedQr);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, [apiItem, apiLoading, apiError, scannedQr, resolvedQr, getLocation, lookupOutsideInventura, feedback, markFoundFromSheet]);
 
     const renderItemActions = useCallback(

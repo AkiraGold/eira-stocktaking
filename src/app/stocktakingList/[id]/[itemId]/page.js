@@ -29,7 +29,9 @@ export default function StocktakingListItemDetail() {
     const returnTo =
         searchParams.get("returnTo") ||
         buildStocktakingListUrl(stocktakingId, { returnTo: HOME_PATH });
-    const [editMode, setEditMode] = useState(false);
+    const wantEdit = searchParams.get('edit') === '1';
+    const [editMode, setEditMode] = useState(wantEdit);
+    const [prevWantEdit, setPrevWantEdit] = useState(wantEdit);
 
     const [editItem, setEditItem] = useState(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -40,10 +42,12 @@ export default function StocktakingListItemDetail() {
     const attachmentsRef = useRef(null);
     const [bottomPadding, setBottomPadding] = useState(0);
     const [barRendered, setBarRendered] = useState(false);
+    const [prevEditMode, setPrevEditMode] = useState(editMode);
 
     const getLocation = useGetLocation();
 
     const [fetchedItem, loading, error, refetchItem] = useStocktakingItem(itemId, stocktakingId);
+    const [prevFetchedItem, setPrevFetchedItem] = useState(fetchedItem);
     const { updateItem, loading: updateLoading, error: updateError, success: updateSuccess } = useUpdateInventoryObject(stocktakingId);
     const { deleteItem, loading: deleteLoading, error: deleteError, success: deleteSuccess } = useDeleteInventoryObject(stocktakingId);
     const { duplicateItem, loading: duplicateLoading } = useDuplicateInventoryObject(stocktakingId);
@@ -69,7 +73,8 @@ export default function StocktakingListItemDetail() {
         }
     }, [fetchedItem]);
 
-    useEffect(() => {
+    if (fetchedItem !== prevFetchedItem) {
+        setPrevFetchedItem(fetchedItem);
         if (fetchedItem) {
             const mappedLoc = fetchedItem.location
                 ? {
@@ -78,29 +83,26 @@ export default function StocktakingListItemDetail() {
                     room: fetchedItem.location.room,
                 }
                 : null;
-            const itemWithMappedLocation = { ...fetchedItem, location: mappedLoc };
-            setEditItem(itemWithMappedLocation);
+            setEditItem({ ...fetchedItem, location: mappedLoc });
         }
-    }, [fetchedItem]);
+    }
 
-    useEffect(() => {
-        if (searchParams.get('edit') === '1') {
-            setEditMode(true);
+    if (wantEdit !== prevWantEdit) {
+        setPrevWantEdit(wantEdit);
+        if (wantEdit) setEditMode(true);
+    }
+
+    if (editMode && editItem && !editItem.location) {
+        const userLoc = getLocation();
+        if (userLoc) {
+            setEditItem({ ...editItem, location: userLoc });
         }
-    }, [searchParams]);
+    }
 
-    useEffect(() => {
-        if (editMode && editItem && !editItem.location) {
-            const userLoc = getLocation();
-            if (userLoc) {
-                setEditItem(prev => ({ ...prev, location: userLoc }));
-            }
-        }
-    }, [editMode, editItem, getLocation]);
-
-    useEffect(() => {
+    if (editMode !== prevEditMode) {
+        setPrevEditMode(editMode);
         if (!editMode) setBarRendered(false);
-    }, [editMode]);
+    }
 
     useEffect(() => {
         if (editMode && barRendered && bottomBarRef.current) {

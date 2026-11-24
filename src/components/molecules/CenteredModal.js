@@ -19,6 +19,14 @@ export default function CenteredModal({
 }) {
     const modalRef = useRef(null);
     const [dismissRunId, setDismissRunId] = useState(0);
+    const dismissKey = isOpen && autoDismissMs != null ? `open-${autoDismissMs}` : null;
+    const [prevDismissKey, setPrevDismissKey] = useState(dismissKey);
+    if (dismissKey !== prevDismissKey) {
+        setPrevDismissKey(dismissKey);
+        if (dismissKey != null) {
+            setDismissRunId((id) => id + 1);
+        }
+    }
 
     useEffect(() => {
         if (disableClickAway || !isOpen) return;
@@ -55,10 +63,9 @@ export default function CenteredModal({
 
     useEffect(() => {
         if (!isOpen || autoDismissMs == null || !onClose) return;
-        setDismissRunId((id) => id + 1);
         const timer = setTimeout(onClose, autoDismissMs);
         return () => clearTimeout(timer);
-    }, [isOpen, autoDismissMs, onClose]);
+    }, [isOpen, autoDismissMs, onClose, dismissRunId]);
 
     const showDismissProgress =
         isOpen && autoDismissMs != null && autoDismissMs > 0;

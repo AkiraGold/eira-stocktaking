@@ -25,12 +25,17 @@ export default function AddToInventoryModal({ baseItem, eventId, onClose, onAdde
     const [status, setStatus] = useState(DEFAULT_LINK_INVENTURA_STATE);
     const [note, setNote] = useState("");
     const [error, setError] = useState("");
+    const [prevBaseItemId, setPrevBaseItemId] = useState(baseItem?.id);
 
-    useEffect(() => {
+    if (baseItem?.id !== prevBaseItemId) {
+        setPrevBaseItemId(baseItem?.id);
         setDetails(null);
         setStatus(DEFAULT_LINK_INVENTURA_STATE);
         setNote("");
         setError("");
+    }
+
+    useEffect(() => {
         if (!baseItem?.id) return;
         let alive = true;
         fetchById(baseItem.id)

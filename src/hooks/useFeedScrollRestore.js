@@ -1,4 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+
+function parseStoredRestore(storageKey) {
+  if (typeof window === "undefined") {
+    return { scrollY: null, anchorId: null, isRestoring: false };
+  }
+  try {
+    const raw = sessionStorage.getItem(storageKey);
+    if (!raw) return { scrollY: null, anchorId: null, isRestoring: false };
+    const parsed = JSON.parse(raw);
+    const scrollY = typeof parsed?.scrollY === "number" ? parsed.scrollY : null;
+    const anchorId = parsed?.anchorId != null ? String(parsed.anchorId) : null;
+    return {
+      scrollY,
+      anchorId,
+      isRestoring: anchorId != null || scrollY != null,
+    };
+  } catch (_e) {
+    return { scrollY: null, anchorId: null, isRestoring: false };
+  }
+}
 
 export function useFeedScrollRestore({
   storageKey,
@@ -8,19 +28,31 @@ export function useFeedScrollRestore({
   const restoringScrollRef = useRef(false);
   const pendingRestoreScrollYRef = useRef(null);
   const pendingRestoreAnchorIdRef = useRef(null);
-  const isHydratingRef = useRef(true);
-  const [isRestoring, setIsRestoring] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(() => {
+    if (!enabled) return false;
+    return parseStoredRestore(storageKey).isRestoring;
+  });
+  const [prevStorageKey, setPrevStorageKey] = useState(storageKey);
+  const [prevEnabled, setPrevEnabled] = useState(enabled);
+
+  if (storageKey !== prevStorageKey || enabled !== prevEnabled) {
+    setPrevStorageKey(storageKey);
+    setPrevEnabled(enabled);
+    const next = enabled
+      ? parseStoredRestore(storageKey)
+      : { scrollY: null, anchorId: null, isRestoring: false };
+    setIsRestoring(next.isRestoring);
+  }
 
   const finishRestore = useCallback(() => {
     restoringScrollRef.current = false;
     pendingRestoreScrollYRef.current = null;
     pendingRestoreAnchorIdRef.current = null;
-    isHydratingRef.current = false;
     setIsRestoring(false);
   }, []);
 
   const persistScrollState = useCallback((meta = {}) => {
-    if (!enabled || typeof window === "undefined" || isHydratingRef.current) return;
+    if (!enabled || typeof window === "undefined" || isRestoring) return;
     try {
       sessionStorage.setItem(
         storageKey,
@@ -31,7 +63,7 @@ export function useFeedScrollRestore({
         })
       );
     } catch (_e) {}
-  }, [enabled, storageKey]);
+  }, [enabled, storageKey, isRestoring]);
 
   const restoreScrollWithRetry = useCallback(
     (targetY) => {
@@ -107,42 +139,33 @@ export function useFeedScrollRestore({
     requestAnimationFrame(tick);
   }, [enabled, finishRestore, restoreScrollWithRetry]);
 
+  // Seed pending restore targets from sessionStorage (refs must not be written during render).
+  useLayoutEffect(() => {
+    if (!enabled || typeof window === "undefined") {
+      pendingRestoreScrollYRef.current = null;
+      pendingRestoreAnchorIdRef.current = null;
+      return;
+    }
+    const next = parseStoredRestore(storageKey);
+    pendingRestoreScrollYRef.current = next.scrollY;
+    pendingRestoreAnchorIdRef.current = next.anchorId;
+  }, [enabled, storageKey]);
+
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return;
-    isHydratingRef.current = true;
-    let hydrationTimeout = null;
-    try {
-      const raw = sessionStorage.getItem(storageKey);
-      if (!raw) {
-        isHydratingRef.current = false;
-        setIsRestoring(false);
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      if (typeof parsed?.scrollY === "number") {
-        pendingRestoreScrollYRef.current = parsed.scrollY;
-      }
-      if (parsed?.anchorId != null) {
-        pendingRestoreAnchorIdRef.current = String(parsed.anchorId);
-        setIsRestoring(true);
-      } else if (typeof parsed?.scrollY === "number") {
-        setIsRestoring(true);
-      } else {
-        isHydratingRef.current = false;
-        setIsRestoring(false);
-      }
-    } catch (_e) {
-      isHydratingRef.current = false;
-      setIsRestoring(false);
+    if (
+      pendingRestoreAnchorIdRef.current == null &&
+      pendingRestoreScrollYRef.current == null
+    ) {
+      return;
     }
-    hydrationTimeout = setTimeout(() => {
+    const hydrationTimeout = setTimeout(() => {
       if (pendingRestoreAnchorIdRef.current == null && pendingRestoreScrollYRef.current == null) {
-        isHydratingRef.current = false;
         setIsRestoring(false);
       }
     }, 5000);
     return () => {
-      if (hydrationTimeout) clearTimeout(hydrationTimeout);
+      clearTimeout(hydrationTimeout);
     };
   }, [enabled, storageKey]);
 
@@ -155,7 +178,7 @@ export function useFeedScrollRestore({
     }
     if (pendingRestoreScrollYRef.current == null) return;
     restoreScrollWithRetry(pendingRestoreScrollYRef.current);
-  }, [enabled, itemCount, restoreAnchorWithRetry, restoreScrollWithRetry]);
+  }, [enabled, itemCount, storageKey, restoreAnchorWithRetry, restoreScrollWithRetry]);
 
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return;

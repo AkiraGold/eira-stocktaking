@@ -18,7 +18,7 @@ Built for phones on the floor: bottom nav (Přehled · Inventura · Scan · Maje
 
 ## Stack
 
-- **Frontend:** Next.js 15 (App Router), React 19, Tailwind CSS 3, Yarn
+- **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS 4, Yarn
 - **Device:** Material Icons Round, `react-qr-barcode-scanner`, HEIC → JPEG via `heic2any`
 - **Offline:** IndexedDB wrapper + fetch queue in `src/offline/`
 - **Backend (separate):** Spring Boot `eira-service` under `/api/inventory/*`

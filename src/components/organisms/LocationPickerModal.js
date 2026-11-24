@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useBuildings, useStoreys, useRooms } from "../../hooks/useBuildings";
 import QRScannerModal from "@/components/organisms/QRScannerModal";
 import DropdownCard from "@/components/molecules/DropdownCard";
@@ -11,14 +11,14 @@ export default function LocationPickerModal({ isOpen, onClose, onSave, initialLo
     const [selectedStorey, setSelectedStorey] = useState(null);
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
-
-    const prevIsOpen = useRef(isOpen);
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
     const { storeys } = useStoreys(selectedBuilding);
     const { rooms } = useRooms(selectedBuilding, selectedStorey);
 
-    useEffect(() => {
-        if (isOpen && !prevIsOpen.current) {
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
+        if (isOpen) {
             if (initialLocation) {
                 const { building, storey, room } = initialLocation;
                 setSelectedBuilding(building ?? null);
@@ -30,8 +30,7 @@ export default function LocationPickerModal({ isOpen, onClose, onSave, initialLo
                 setSelectedRoom(null);
             }
         }
-        prevIsOpen.current = isOpen;
-    }, [isOpen, initialLocation]);
+    }
 
     const handleQRScan = (scannedValue) => {
         if (scannedValue) {

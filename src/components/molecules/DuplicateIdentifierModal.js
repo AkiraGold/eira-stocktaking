@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import CenteredModal from "@/components/molecules/CenteredModal";
 import QRCodeInput from "@/components/molecules/QRCodeInput";
 import Button from "@/components/atoms/Button";
@@ -15,12 +15,13 @@ export default function DuplicateIdentifierModal({
   loading = false,
 }) {
   const [code, setCode] = useState("");
-
-  useEffect(() => {
+  const [prevOpenKey, setPrevOpenKey] = useState({ isOpen, originalCode });
+  if (isOpen !== prevOpenKey.isOpen || originalCode !== prevOpenKey.originalCode) {
+    setPrevOpenKey({ isOpen, originalCode });
     if (isOpen) {
       setCode(suggestDuplicateIdentifier(originalCode));
     }
-  }, [isOpen, originalCode]);
+  }
 
   const { available, valid, checking, error } = useInventoryIdentifiersAvailability(code, {
     enabled: isOpen,

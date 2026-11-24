@@ -72,34 +72,29 @@ export function useInventoryIdentifiersAvailability(
   code,
   { enabled = true, debounceMs = 400 } = {}
 ) {
+  const trimmed = String(code ?? "").trim();
+  const shouldCheck = enabled && Boolean(trimmed);
+
   const [invNumberAvailable, setInvNumberAvailable] = useState(null);
   const [qrAvailable, setQrAvailable] = useState(null);
-  const [checking, setChecking] = useState(false);
+  const [checking, setChecking] = useState(shouldCheck);
   const [error, setError] = useState(null);
   const requestIdRef = useRef(0);
+  const [prevKey, setPrevKey] = useState(`${enabled}:${trimmed}`);
+  const key = `${enabled}:${trimmed}`;
 
-  const trimmed = String(code ?? "").trim();
+  if (key !== prevKey) {
+    setPrevKey(key);
+    setInvNumberAvailable(null);
+    setQrAvailable(null);
+    setChecking(shouldCheck);
+    setError(null);
+  }
 
   useEffect(() => {
-    if (!enabled) {
-      setInvNumberAvailable(null);
-      setQrAvailable(null);
-      setChecking(false);
-      setError(null);
-      return;
-    }
-
-    if (!trimmed) {
-      setInvNumberAvailable(null);
-      setQrAvailable(null);
-      setChecking(false);
-      setError(null);
-      return;
-    }
+    if (!shouldCheck) return;
 
     const requestId = ++requestIdRef.current;
-    setChecking(true);
-    setError(null);
 
     const timer = setTimeout(async () => {
       try {
@@ -120,7 +115,7 @@ export function useInventoryIdentifiersAvailability(
     }, debounceMs);
 
     return () => clearTimeout(timer);
-  }, [trimmed, enabled, debounceMs]);
+  }, [trimmed, shouldCheck, debounceMs]);
 
   const valid = useMemo(
     () =>

@@ -30,6 +30,12 @@ function normalizeInlineImage(imageValue) {
   return imageValue;
 }
 
+function delayReadyFor(itemImage, debugDelayMs) {
+  const inline = normalizeInlineImage(itemImage);
+  if (inline) return true;
+  return debugDelayMs <= 0;
+}
+
 export function useItemImage({
   itemId,
   itemImage,
@@ -42,16 +48,20 @@ export function useItemImage({
   const containerRef = React.useRef(null);
   const [isVisible, setIsVisible] = React.useState(false);
   const [debugDelayMs, setDebugDelayMs] = React.useState(() => getImageDebugDelayMs());
-  const [delayReady, setDelayReady] = React.useState(() => {
-    const d = getImageDebugDelayMs();
-    if (d <= 0) return true;
-    // Dev delay simulates slow thumbnail API only — not data already on the item (cache / list payload).
-    return Boolean(normalizeInlineImage(itemImage));
-  });
+  const [delayReady, setDelayReady] = React.useState(() =>
+    delayReadyFor(itemImage, getImageDebugDelayMs())
+  );
+
+  const resetKey = `${itemId}|${itemImage}|${compact}|${enableLazyImageFetch}|${debugDelayMs}`;
+  const [prevResetKey, setPrevResetKey] = React.useState(resetKey);
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
+    setIsVisible(false);
+    setDelayReady(delayReadyFor(itemImage, debugDelayMs));
+  }
 
   React.useEffect(() => {
     const sync = () => setDebugDelayMs(getImageDebugDelayMs());
-    sync();
     if (typeof window === "undefined") return;
     window.addEventListener("settings-updated", sync);
     window.addEventListener("storage", sync);
@@ -60,16 +70,6 @@ export function useItemImage({
       window.removeEventListener("storage", sync);
     };
   }, []);
-
-  React.useEffect(() => {
-    setIsVisible(false);
-    const inline = normalizeInlineImage(itemImage);
-    if (inline) {
-      setDelayReady(true);
-    } else {
-      setDelayReady(debugDelayMs <= 0);
-    }
-  }, [itemId, itemImage, compact, enableLazyImageFetch, debugDelayMs]);
 
   React.useEffect(() => {
     if (debugDelayMs <= 0) return;

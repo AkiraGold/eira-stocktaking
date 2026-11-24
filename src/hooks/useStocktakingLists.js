@@ -4,39 +4,47 @@ import { getAuthHeadersSafe, isAuthenticated } from "@/utils/token";
 export function useStocktakingLists({ page = 0, limit = 10, sortBy = "id", sortOrder = "asc" } = {}) {
   const [lists, setLists] = useState([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => isAuthenticated());
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Don't make API call if not authenticated
     if (!isAuthenticated()) {
-      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    fetch(`/api/events`, {
-      method: "POST",
-      headers: getAuthHeadersSafe(),
-      body: JSON.stringify({
-        page,
-        limit,
-        sortBy,
-        sortOrder,
-      }),
-    })
-      .then((res) => {
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/events`, {
+          method: "POST",
+          headers: getAuthHeadersSafe(),
+          body: JSON.stringify({
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+          }),
+        });
         if (!res.ok) throw new Error("Failed to fetch stocktaking lists");
-        return res.json();
-      })
-      .then((data) => {
+        const data = await res.json();
+        if (cancelled) return;
         setLists(Array.isArray(data.items) ? data.items : []);
         setTotal(data.total || 0);
         setError(null);
-      })
-      .catch((err) => setError(err))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        if (!cancelled) setError(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [page, limit, sortBy, sortOrder]);
 
   return [lists, total, loading, error];
-} 
+}

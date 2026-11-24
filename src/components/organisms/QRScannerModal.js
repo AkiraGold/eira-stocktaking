@@ -11,47 +11,68 @@ export default function QRScannerModal({ isOpen, onClose, onScan, validate }) {
     const lastSubmittedRef = useRef(null);
     const openedAtRef = useRef(0);
 
-    useEffect(() => {
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
         if (!isOpen) {
             setShowModal(false);
             setScannedDataString(null);
             setScannerError(false);
             setDisplayMessage("Skenujte QR kód...");
-            return;
+        } else {
+            setShowModal(true);
+            setScannerSession((prev) => prev + 1);
+            setDisplayMessage("Skenujte QR kód...");
+            setScannedDataString(null);
+            setScannerError(false);
         }
-        setShowModal(true);
-        setScannerSession((prev) => prev + 1);
-        openedAtRef.current = Date.now();
-        setDisplayMessage("Skenujte QR kód...");
-        setScannedDataString(null);
-        setScannerError(false);
-    }, [isOpen]);
+    }
 
     useEffect(() => {
+        if (isOpen) {
+            openedAtRef.current = Date.now();
+        }
+    }, [isOpen]);
+
+    const [prevScanned, setPrevScanned] = useState(scannedDataString);
+    if (scannedDataString !== prevScanned) {
+        setPrevScanned(scannedDataString);
         if (!scannedDataString) {
             if (!scannerError) setDisplayMessage("Skenujte QR kód...");
-            return;
-        }
-        setScannerError(false);
-        if (validate) {
-            let result = { valid: false, message: "QR není ve správném formátu JSON." };
-            try {
-                const parsed = JSON.parse(scannedDataString);
-                result = validate(parsed);
-            } catch (e) { }
-            if (result.valid) {
-                setDisplayMessage(result.message || "Naskenováno!");
-                lastSubmittedRef.current = scannedDataString;
-                onScan(scannedDataString, result.data);
-                onClose();
-            } else {
-                setDisplayMessage(result.message || "QR není platný.");
-            }
         } else {
-            lastSubmittedRef.current = scannedDataString;
-            onScan(scannedDataString);
-            onClose();
+            setScannerError(false);
         }
+    }
+
+    useEffect(() => {
+        if (!scannedDataString) return;
+        let cancelled = false;
+        (async () => {
+            await Promise.resolve();
+            if (cancelled) return;
+            if (validate) {
+                let result = { valid: false, message: "QR není ve správném formátu JSON." };
+                try {
+                    const parsed = JSON.parse(scannedDataString);
+                    result = validate(parsed);
+                } catch (e) { }
+                if (result.valid) {
+                    setDisplayMessage(result.message || "Naskenováno!");
+                    lastSubmittedRef.current = scannedDataString;
+                    onScan(scannedDataString, result.data);
+                    onClose();
+                } else {
+                    setDisplayMessage(result.message || "QR není platný.");
+                }
+            } else {
+                lastSubmittedRef.current = scannedDataString;
+                onScan(scannedDataString);
+                onClose();
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scannedDataString]);
 

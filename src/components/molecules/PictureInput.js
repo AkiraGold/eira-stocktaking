@@ -51,7 +51,9 @@ export default function PictureInput({ label, onChange, value, editMode = false,
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
-    useEffect(() => {
+    const [prevValue, setPrevValue] = useState(value);
+    if (value !== prevValue) {
+        setPrevValue(value);
         if (!value) {
             setPreview(null);
         } else if (typeof value === "string") {
@@ -63,11 +65,14 @@ export default function PictureInput({ label, onChange, value, editMode = false,
                 setPreview(value);
             }
         } else if (value instanceof File) {
-            const url = URL.createObjectURL(value);
-            setPreview(url);
-            return () => URL.revokeObjectURL(url);
+            setPreview(URL.createObjectURL(value));
         }
-    }, [value]);
+    }
+
+    useEffect(() => {
+        if (!(value instanceof File) || !preview || !String(preview).startsWith("blob:")) return undefined;
+        return () => URL.revokeObjectURL(preview);
+    }, [value, preview]);
 
     const { containerRef, imageSrc, isWaitingForLazyImage } = useItemImage({
         itemId,
@@ -78,10 +83,13 @@ export default function PictureInput({ label, onChange, value, editMode = false,
     });
     const showLoadingPlaceholder = isWaitingForLazyImage || (!!imageSrc && !imageLoaded && !imageError);
 
-    useEffect(() => {
+    const imageResetKey = `${imageSrc ?? ""}::${itemId ?? ""}`;
+    const [prevImageResetKey, setPrevImageResetKey] = useState(imageResetKey);
+    if (imageResetKey !== prevImageResetKey) {
+        setPrevImageResetKey(imageResetKey);
         setImageLoaded(false);
         setImageError(false);
-    }, [imageSrc, itemId]);
+    }
 
     useEffect(() => {
         if (!imageSrc) return;

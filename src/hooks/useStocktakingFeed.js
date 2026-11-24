@@ -71,8 +71,22 @@ export function useStocktakingFeed({
       }),
     [eventId, sortBy, sortOrder, searchTerm, effectiveFeedState, inventoryDisplayMode, filterState?.hasNote, pageSize, location?.room, location?.storey, location?.building]
   );
+  const feedEpoch = `${queryKey}|${enabled ? 1 : 0}`;
+  const [prevFeedEpoch, setPrevFeedEpoch] = useState(feedEpoch);
   const feedRequestId = useRef(0);
   const appendLock = useRef(false);
+  const replaceToPage0Ref = useRef(null);
+
+  if (feedEpoch !== prevFeedEpoch) {
+    setPrevFeedEpoch(feedEpoch);
+    invalidateFeedCaches();
+    setItems([]);
+    setTotal(0);
+    setViewPageIndex(0);
+    setNextAppendPage0(0);
+    setHasMore(true);
+    setError(null);
+  }
 
   const reset = useCallback(() => {
     invalidateFeedCaches();
@@ -186,8 +200,9 @@ export function useStocktakingFeed({
     }
   }, [enabled, eventId, total, nextAppendPage0, pageSize, loadPageFromApi]);
 
-  const replaceToPage0Ref = useRef(replaceToPage0);
-  replaceToPage0Ref.current = replaceToPage0;
+  useEffect(() => {
+    replaceToPage0Ref.current = replaceToPage0;
+  });
 
   const goToPage1Based = useCallback((page1Based) => {
     const p0 = page1Based - 1;
@@ -217,11 +232,18 @@ export function useStocktakingFeed({
 
   useLayoutEffect(() => {
     clearLegacyFeedSessionStorage();
-    reset();
-    if (enabled && eventId) {
-      void replaceToPage0Ref.current(0);
-    }
-  }, [queryKey, reset, enabled, eventId]);
+    if (!(enabled && eventId)) return undefined;
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      const load = replaceToPage0Ref.current;
+      if (load) void load(0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [queryKey, enabled, eventId]);
 
   const highlightPage1Based = useMemo(
     () => feedHighlightPage1Based(viewPageIndex, nextAppendPage0, total, pageSize),

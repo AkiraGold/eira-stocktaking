@@ -76,11 +76,9 @@ export function BaseItemsInventoryLayoutProvider({ children }) {
         }
     }, []);
 
-    useEffect(() => {
-        if (location && !locationInitialized) {
-            setLocationInitialized(true);
-        }
-    }, [location, locationInitialized]);
+    if (location && !locationInitialized) {
+        setLocationInitialized(true);
+    }
 
     const queryKey = useMemo(
         () =>
@@ -248,44 +246,56 @@ export function BaseItemsInventoryLayoutProvider({ children }) {
     );
 
     const replaceToPage0Ref = useRef(replaceToPage0);
-    replaceToPage0Ref.current = replaceToPage0;
+    useLayoutEffect(() => {
+        replaceToPage0Ref.current = replaceToPage0;
+    }, [replaceToPage0]);
 
     useLayoutEffect(() => {
-        if (typeof window !== "undefined") {
-            const cachedRaw = sessionStorage.getItem(cacheKey);
-            if (cachedRaw) {
-                try {
-                    const cached = JSON.parse(cachedRaw);
-                    const cachedItems = Array.isArray(cached.items) ? cached.items : [];
-                    const vp = Number(cached.viewPageIndex);
-                    if (cachedItems.length > 0 && Number.isInteger(vp) && vp >= 0) {
-                        const nap = Number(cached.nextAppendPage0);
-                        const derivedNext =
-                            Number.isInteger(nap) && nap >= 0
-                                ? nap
-                                : Math.max(vp + 1, Math.ceil(cachedItems.length / pageSize));
-                        setItems(cachedItems);
-                        setTotal(Number(cached.total) || 0);
-                        setViewPageIndex(vp);
-                        setNextAppendPage0(derivedNext);
-                        setHasMore(Boolean(cached.hasMoreNext));
-                        setError(null);
-                        return;
-                    }
-                } catch (_e) {}
+        let cancelled = false;
+        (async () => {
+            await Promise.resolve();
+            if (cancelled) return;
+
+            if (typeof window !== "undefined") {
+                const cachedRaw = sessionStorage.getItem(cacheKey);
+                if (cachedRaw) {
+                    try {
+                        const cached = JSON.parse(cachedRaw);
+                        const cachedItems = Array.isArray(cached.items) ? cached.items : [];
+                        const vp = Number(cached.viewPageIndex);
+                        if (cachedItems.length > 0 && Number.isInteger(vp) && vp >= 0) {
+                            const nap = Number(cached.nextAppendPage0);
+                            const derivedNext =
+                                Number.isInteger(nap) && nap >= 0
+                                    ? nap
+                                    : Math.max(vp + 1, Math.ceil(cachedItems.length / pageSize));
+                            setItems(cachedItems);
+                            setTotal(Number(cached.total) || 0);
+                            setViewPageIndex(vp);
+                            setNextAppendPage0(derivedNext);
+                            setHasMore(Boolean(cached.hasMoreNext));
+                            setError(null);
+                            return;
+                        }
+                    } catch (_e) {}
+                }
             }
-        }
 
-        setItems([]);
-        setTotal(0);
-        setViewPageIndex(0);
-        setNextAppendPage0(0);
-        setHasMore(true);
+            setItems([]);
+            setTotal(0);
+            setViewPageIndex(0);
+            setNextAppendPage0(0);
+            setHasMore(true);
 
-        if (!locationInitialized) return;
+            if (!locationInitialized) return;
 
-        void replaceToPage0Ref.current(0);
-    }, [cacheKey, locationInitialized]);
+            void replaceToPage0Ref.current(0);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [cacheKey, locationInitialized, pageSize]);
 
     useEffect(() => {
         persistFeedState();

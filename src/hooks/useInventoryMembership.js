@@ -17,19 +17,30 @@ function normalizeCode(value) {
  */
 export function useInventoryMembership({ eventId, search }) {
     const term = String(search ?? "").trim();
+    const canLookup = Boolean(eventId && term);
+    const lookupKey = `${eventId ?? ""}:${term}`;
+
     const [byCode, setByCode] = useState(() => new Map());
     const [known, setKnown] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(canLookup);
+    const [prevLookupKey, setPrevLookupKey] = useState(lookupKey);
 
-    useEffect(() => {
-        if (!eventId || !term) {
+    if (lookupKey !== prevLookupKey) {
+        setPrevLookupKey(lookupKey);
+        if (!canLookup) {
             setByCode(new Map());
             setKnown(false);
-            return undefined;
+            setLoading(false);
+        } else {
+            setKnown(false);
+            setLoading(true);
         }
+    }
+
+    useEffect(() => {
+        if (!canLookup) return undefined;
+
         const controller = new AbortController();
-        setLoading(true);
-        setKnown(false);
         const timer = setTimeout(async () => {
             try {
                 const res = await fetch("/api/objects/feed", {
@@ -74,7 +85,7 @@ export function useInventoryMembership({ eventId, search }) {
             clearTimeout(timer);
             controller.abort();
         };
-    }, [eventId, term]);
+    }, [eventId, term, canLookup]);
 
     /** Položka inventury pro předmět z majetku, nebo null. */
     const findInInventory = useCallback(
