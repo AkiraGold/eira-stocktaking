@@ -85,10 +85,13 @@ export default function ErrorPage() {
             <strong>Příklad správného přístupu:</strong>
           </p>
           <code className="text-xs block mt-2 p-2 rounded" style={{ background: "var(--surface-2)", color: "var(--fg)" }}>
-            &lt;form method="POST" action="/"&gt;<br/>
-            &nbsp;&nbsp;&lt;input type="hidden" name="token" value="your-token" /&gt;<br/>
-            &nbsp;&nbsp;&lt;button type="submit"&gt;Otevřít aplikaci&lt;/button&gt;<br/>
-            &lt;/form&gt;
+            {`<form method="POST" action="/">`}
+            <br />
+            {`  <input type="hidden" name="token" value="your-token" />`}
+            <br />
+            {`  <button type="submit">Otevřít aplikaci</button>`}
+            <br />
+            {`</form>`}
           </code>
           
           <div className="mt-4 p-3 rounded" style={{ background: "var(--surface-2)" }}>

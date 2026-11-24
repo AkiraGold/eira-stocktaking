@@ -1,72 +1,107 @@
-# EIRA Stocktaking (Frontend)
+# EIRA Stocktaking
 
-Next.js frontend for stocktaking flows.
+Mobile-first frontend for inventory stocktaking against an EIRA backend. Pick an inventura, work room by room, scan QR codes, mark items found / missing / moved, and add assets from the master list when something shows up that wasn’t expected.
 
-## Frontend
+Built for phones on the floor: bottom nav (Přehled · Inventura · Scan · Majetek · Profil), offline-friendly edits, and a light/dark theme.
 
-### Run
+<!-- Screenshots: add under docs/ when the redesign is finished. -->
+
+## What it does
+
+- **Přehled** — current inventura, progress, “I’m in this room”, rooms still to walk
+- **Inventura** — item feed with filters, sort, quick state actions, notes
+- **Scan** — camera QR flow with confirm / move / undo feedback
+- **Majetek** — search the full asset register, link into inventura, or create new
+- **Profil** — user, theme, inventura display mode, offline download / pending sync
+- Proxies `/api/*` to the Spring inventory API (`API_BASE_URL`)
+- Optional offline queue for state changes when the signal drops
+
+## Stack
+
+- **Frontend:** Next.js 15 (App Router), React 19, Tailwind CSS 3, Yarn
+- **Device:** Material Icons Round, `react-qr-barcode-scanner`, HEIC → JPEG via `heic2any`
+- **Offline:** IndexedDB wrapper + fetch queue in `src/offline/`
+- **Backend (separate):** Spring Boot `eira-service` under `/api/inventory/*`
+
+## Setup
+
+Needs Node (LTS fine) and [Yarn](https://yarnpkg.com) 1.x.
+
+```bash
+git clone https://github.com/AkiraGold/eira-stocktaking.git
+cd eira-stocktaking
+
+yarn install
+```
+
+Create `.env` (or export when starting):
+
+```env
+API_BASE_URL="https://rest.example.eira.com"
+# local backend example:
+# API_BASE_URL="http://localhost:8090"
+```
+
+If `API_BASE_URL` is unset, the server falls back to `http://localhost:8088`.
+
+```bash
+yarn dev            # http://localhost:3000
+```
+
+Token access is expected (cookie / auth guard). Use the usual EIRA entry link or the token flow on `/error` when testing.
+
+## Scripts
 
 ```bash
 yarn dev
+yarn build
+yarn start          # production; respects PORT / -p
+yarn lint
 ```
 
-App runs on `http://localhost:3000`.
+## Layout
 
-### Build
+```text
+src/
+  app/                  App Router pages + /api proxy
+    (inventory)/        Majetek / base-item detail
+    profile/
+    stocktakingList/    inventura pick, list, item, scan, link, new
+    api/                auth + catch-all proxy to API_BASE_URL
+  components/           atoms / molecules / organisms + guards
+  contexts/
+  hooks/
+  offline/              IndexedDB, offline fetch, boot, status
+  utils/                states, navigation, theme, images, …
+public/
+next.config.mjs
+package.json
+yarn.lock
+```
+
+## Deploy
 
 ```bash
+yarn install
 yarn build
 ```
 
-### Production start
-
-```bash
-yarn start
-```
-
-## Deployment (simple)
-
-```bash
-yarn
-yarn build
-```
-
-Copy these to the server:
+Ship at least:
 
 - `.next`
 - `public`
 - `next.config.mjs`
 - `package.json`
 - `yarn.lock`
-- `.env` (optional)
-
-Start app on server with API base URL:
+- `.env` (or set `API_BASE_URL` in the process environment)
 
 ```bash
 API_BASE_URL=http://172.x.x.x:8090 yarn start
+# or systemd: Environment=PORT=3000 Environment=API_BASE_URL=...
 ```
 
-Use `.env` only when you want a backend URL different from fallback.
+Changing `API_BASE_URL` only needs a process restart, not a rebuild. Frontend browser calls stay on same-origin `/api/*`; the Node server forwards to the backend.
 
-Example `.env`:
+## License
 
-```env
-API_BASE_URL="http://172.x.x.x:8090"
-```
-
-## API Connection
-
-Frontend calls local `/api/*` routes.
-
-Those routes are proxied by `src/app/api/[...path]/route.js` to backend `/api/inventory/*`.
-
-Backend base URL comes from `API_BASE_URL` when the server starts.
-If `API_BASE_URL` is not set, fallback is `http://localhost:8088`.
-To change API target, restart server with a new `API_BASE_URL` (no rebuild needed).
-
-## Backend (surface info)
-
-Backend service is a Spring Boot app (`eira-service`).
-
-Frontend expects backend inventory endpoints under `/api/inventory/*`.
-
+All rights reserved.
