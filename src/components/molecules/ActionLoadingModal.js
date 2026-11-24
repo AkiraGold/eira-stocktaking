@@ -22,7 +22,7 @@ export default function ActionLoadingModal({
           padding: "0.5rem 0",
         }}
       >
-        <span style={{ fontSize: 14, color: "#535353" }}>{message}</span>
+        <span style={{ fontSize: 14, color: "var(--muted)" }}>{message}</span>
         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500" />
       </div>
     </CenteredModal>

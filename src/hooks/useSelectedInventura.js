@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { clearAllInventuraEphemeralCaches } from '@/utils/inventuraCache';
+import { notifySelectedInventuraChanged } from '@/utils/inventuraDisplayMode';
 
 function inventuraId(value) {
     if (value?.id == null) return null;
@@ -35,6 +36,7 @@ export function useSelectedInventura() {
         activeInventuraIdRef.current = nextId;
         setSelectedInventura(inventura);
         localStorage.setItem('selectedInventura', JSON.stringify(inventura));
+        notifySelectedInventuraChanged();
     };
 
     const clearSelectedInventura = () => {
@@ -42,6 +44,7 @@ export function useSelectedInventura() {
         activeInventuraIdRef.current = null;
         setSelectedInventura(null);
         localStorage.removeItem('selectedInventura');
+        notifySelectedInventuraChanged();
     };
 
     return {

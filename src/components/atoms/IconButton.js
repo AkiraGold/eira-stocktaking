@@ -2,18 +2,18 @@ import React from 'react';
 
 const VARIANT_STYLES = {
   primary: {
-    background: '#282828',
-    color: '#fff',
-    border: '1px solid #282828',
+    background: 'var(--ink-soft)',
+    color: 'var(--on-ink)',
+    border: '1px solid var(--ink-soft)',
   },
   secondary: {
-    background: '#f0f1f3',
-    color: '#282828',
-    border: '1px solid #d1d1d1',
+    background: 'var(--surface-2)',
+    color: 'var(--fg)',
+    border: '1px solid var(--line)',
   },
   danger: {
-    background: '#FF6262',
-    color: '#000',
+    background: 'var(--danger)',
+    color: 'var(--accent-ink)',
     border: 'none',
   },
 };
@@ -38,7 +38,7 @@ const IconButton = ({
     padding: 0,
     cursor: 'pointer',
     transition: 'opacity 0.15s',
-    fontSize: 0, // Remove default button text size
+    fontSize: 0,
     ...variantStyle,
     ...style,
   };

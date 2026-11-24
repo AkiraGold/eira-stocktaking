@@ -257,7 +257,7 @@ export default function NewItemForm({
                   placeholder="Popisek"
                 />
               </div>
-              <div style={{ width: "100%", height: 2, background: "#F0F1F3" }} />
+              <div style={{ width: "100%", height: 2, background: "var(--surface-2)" }} />
               <TextInput
                 value={editItem.note || ""}
                 onChange={(e) => setEditItem((prev) => ({ ...prev, note: e.target.value }))}
@@ -275,12 +275,12 @@ export default function NewItemForm({
                 disabled={entregsLoading}
               />
               {entregsError && (
-                <div style={{ color: "#FF6262", fontSize: "12px", marginTop: "4px" }}>
+                <div style={{ color: "var(--danger)", fontSize: "12px", marginTop: "4px" }}>
                   Chyba při načítání typů objektů: {entregsError.message}
                 </div>
               )}
               {entregsLoading && (
-                <div style={{ color: "#535353", fontSize: "12px", marginTop: "4px" }}>
+                <div style={{ color: "var(--muted)", fontSize: "12px", marginTop: "4px" }}>
                   Načítání typů objektů...
                 </div>
               )}
@@ -320,7 +320,7 @@ export default function NewItemForm({
         <div className="container flex items-center gap-2 p-4 justify-center">
           <button
             type="button"
-            className="flex items-center gap-2 rounded-2xl bg-[#282828] p-3 text-white border-none cursor-pointer flex-1 justify-between"
+            className="flex items-center gap-2 rounded-2xl bg-[var(--ink-soft)] p-3 text-white border-none cursor-pointer flex-1 justify-between"
             style={{ fontSize: "0.75rem" }}
             onClick={handleSave}
           >

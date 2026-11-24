@@ -14,13 +14,12 @@ export default function CenteredModal({
     disableClickAway = false,
     hideCloseButton = false,
     autoDismissMs = null,
-    autoDismissProgressColor = "#2ecc40",
+    autoDismissProgressColor = "var(--ok)",
     autoDismissEdge = "bottom",
 }) {
     const modalRef = useRef(null);
     const [dismissRunId, setDismissRunId] = useState(0);
 
-    // Handle click outside
     useEffect(() => {
         if (disableClickAway || !isOpen) return;
         const handleClickOutside = (event) => {
@@ -35,20 +34,16 @@ export default function CenteredModal({
         };
     }, [isOpen, onClose, disableClickAway]);
 
-    // Handle background scroll prevention
     useEffect(() => {
         if (isOpen) {
-            // Store current scroll position
             const scrollY = window.scrollY;
             
-            // Prevent scrolling
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.top = `-${scrollY}px`;
             document.body.style.width = '100%';
             
             return () => {
-                // Restore scroll position and styles
                 document.body.style.overflow = '';
                 document.body.style.position = '';
                 document.body.style.top = '';
@@ -99,7 +94,7 @@ export default function CenteredModal({
                 }}
             >
                 <div style={{
-                    background: "#fff",
+                    background: 'var(--surface)',
                     borderRadius: "1rem",
                     position: "relative",
                     boxShadow: "0px 5px 15px rgba(0,0,0,0.2)",
@@ -134,7 +129,6 @@ export default function CenteredModal({
                             }}
                         />
                     )}
-                    {/* Header section */}
                     {(title || onClose) && (
                         <div style={{
                             padding: "1rem",
@@ -147,7 +141,7 @@ export default function CenteredModal({
                                     margin: 0,
                                     fontSize: "1rem",
                                     fontWeight: 700,
-                                    color: "#000"
+                                    color: 'var(--fg)'
                                 }}>
                                     {title}
                                 </h3>
@@ -167,10 +161,10 @@ export default function CenteredModal({
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
-                                        color: "#000",
+                                        color: 'var(--fg)',
                                         zIndex: 1000,
                                     }}
-                                    className="hover:bg-gray-200 active:bg-gray-300"
+                                    className="hover:bg-[var(--surface-2)] active:bg-[var(--line)]"
                                 >
                                     <span className="material-icons-round" style={{ fontSize: "18px" }}>
                                         close
@@ -180,7 +174,6 @@ export default function CenteredModal({
                         </div>
                     )}
 
-                    {/* Content section */}
                     <div style={{
                         flex: 1,
                         overflow: "auto",
@@ -199,7 +192,6 @@ export default function CenteredModal({
         </div>
     );
 
-    // Use portal to render at document body level
     if (typeof window !== 'undefined' && isOpen) {
         return createPortal(
             <>

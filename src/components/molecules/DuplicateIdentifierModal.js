@@ -42,7 +42,7 @@ export default function DuplicateIdentifierModal({
       disableClickAway={loading}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "8px 0" }}>
-        <p style={{ margin: 0, fontSize: 14, color: "#535353", lineHeight: 1.4 }}>
+        <p style={{ margin: 0, fontSize: 14, color: "var(--muted)", lineHeight: 1.4 }}>
           Kopie potřebuje vlastní inventurizační číslo / QR. Upravte návrh nebo naskenujte kód.
         </p>
         <QRCodeInput

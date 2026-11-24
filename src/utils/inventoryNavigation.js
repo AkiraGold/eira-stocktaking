@@ -84,14 +84,17 @@ export function buildStocktakingNewItemUrl(stocktakingId, { returnTo, qr } = {})
   return buildFormPageUrl(stocktakingNewItemPath(stocktakingId), { returnTo, qr });
 }
 
-/** Main menu link → /linkItem (Nezkontrolováno) */
-export function buildLinkItemUrl({ returnTo, qr } = {}) {
-  return buildFormPageUrl(MAIN_MENU_LINK_ITEM_PATH, { returnTo, qr });
+/** Propojení existujícího předmětu se od kroku 4 dělá na obrazovce Majetek. */
+export const ASSETS_PATH = "/base-items";
+
+/** Dříve /linkItem; nyní obrazovka Majetek (hledání + Přidat do inventury). */
+export function buildLinkItemUrl(_opts = {}) {
+  return ASSETS_PATH;
 }
 
 /** Inventura list / scan link → /stocktakingList/{id}/link (Nový) */
-export function buildStocktakingLinkItemUrl(stocktakingId, { returnTo, qr } = {}) {
-  return buildFormPageUrl(stocktakingLinkItemPath(stocktakingId), { returnTo, qr });
+export function buildStocktakingLinkItemUrl(_stocktakingId, _opts = {}) {
+  return ASSETS_PATH;
 }
 
 export function resolveScreenReturnTo(searchParams, fallback = HOME_PATH) {

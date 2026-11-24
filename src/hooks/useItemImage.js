@@ -1,7 +1,9 @@
 import React from "react";
+import { SHOW_DEV_SETTINGS } from "@/utils/devFlags";
 
 const getImageDebugDelayMs = () => {
   if (typeof window === "undefined") return 0;
+  if (!SHOW_DEV_SETTINGS) return 0;
   const enabledRaw = localStorage.getItem("settings_imageDebugDelayEnabled");
   const enabled = enabledRaw ? JSON.parse(enabledRaw) : false;
   if (!enabled) return 0;

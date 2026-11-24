@@ -7,11 +7,10 @@ export default function HeadingCard({
     rightActions = [],
     extraRow = null
 }) {
-    // Helper function to render action button or link
     const renderAction = (action, idx, position) => {
         const commonStyle = {
-            background: "#282828",
-            color: "#fff",
+            background: "var(--accent-ink)",
+            color: "var(--accent)",
             border: "none",
             borderRadius: 16,
             width: 38,
@@ -20,7 +19,7 @@ export default function HeadingCard({
             alignItems: "center",
             justifyContent: "center",
             padding: 0,
-            cursor: "pointer"
+            cursor: "pointer",
         };
 
         if (action.href) {
@@ -58,7 +57,8 @@ export default function HeadingCard({
     return (
         <div
             style={{
-                background: "#000",
+                background: "var(--accent)",
+                color: "var(--accent-ink)",
                 borderRadius: 16,
                 padding: 16,
                 display: "flex",
@@ -67,7 +67,6 @@ export default function HeadingCard({
                 width: "100%"
             }}
         >
-            {/* Actions row: left and right */}
             <div
                 style={{
                     display: "flex",
@@ -89,11 +88,10 @@ export default function HeadingCard({
                 </div>
             </div>
 
-            {/* Heading and optional extra row */}
             <div className="flex flex-col gap-2">
-                <div style={{ color: "#fff", fontWeight: 700, fontSize: 32 }}>{heading}</div>
+                <div style={{ color: "var(--accent-ink)", fontWeight: 700, fontSize: 32 }}>{heading}</div>
                 {extraRow && (
-                    <div style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{extraRow}</div>
+                    <div style={{ color: "var(--accent-ink)", fontWeight: 700, fontSize: 16 }}>{extraRow}</div>
                 )}
             </div>
         </div>

@@ -31,8 +31,8 @@ export default function StatusSelectionModal({
             width="90vw"
         >
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", width: "100%" }}>
-                <div style={{ fontSize: "14px", color: "#666", fontWeight: 500 }}>
-                    Vyberte stav pro položku: <strong style={{ color: "#282828" }}>{itemName}</strong>
+                <div style={{ fontSize: "14px", color: "var(--muted)", fontWeight: 500 }}>
+                    Vyberte stav pro položku: <strong style={{ color: "var(--fg)" }}>{itemName}</strong>
                 </div>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -45,25 +45,25 @@ export default function StatusSelectionModal({
                                 alignItems: "center",
                                 gap: "0.75rem",
                                 padding: "0.75rem",
-                                border: selectedStatus === option.value ? "2px solid #282828" : "1px solid #d1d1d1",
+                                border: selectedStatus === option.value ? "2px solid var(--accent)" : "1px solid var(--line)",
                                 borderRadius: "8px",
-                                background: selectedStatus === option.value ? "#f8f9fa" : "white",
+                                background: selectedStatus === option.value ? "var(--surface-2)" : "var(--surface)",
                                 cursor: "pointer",
                                 fontSize: "0.875rem",
                                 fontWeight: "500",
                                 textAlign: "left",
                                 width: "100%",
                                 transition: "all 0.2s ease",
-                                color: "#282828"
+                                color: "var(--fg)"
                             }}
                             onMouseEnter={(e) => {
                                 if (selectedStatus !== option.value) {
-                                    e.target.style.backgroundColor = "#f5f5f5";
+                                    e.target.style.backgroundColor = "var(--surface-2)";
                                 }
                             }}
                             onMouseLeave={(e) => {
                                 if (selectedStatus !== option.value) {
-                                    e.target.style.backgroundColor = "white";
+                                    e.target.style.backgroundColor = "var(--surface)";
                                 }
                             }}
                         >
@@ -79,7 +79,7 @@ export default function StatusSelectionModal({
                     gap: "0.5rem", 
                     justifyContent: "flex-end", 
                     paddingTop: "0.75rem", 
-                    borderTop: "1px solid #e0e0e0", 
+                    borderTop: "1px solid var(--line)", 
                     marginTop: "0.75rem"
                 }}>
                     <Button 

@@ -30,10 +30,10 @@ export default function QRCodeInput({
   if (!editMode) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <div style={{ color: "#535353", fontWeight: 500, fontSize: 14 }}>
+        <div style={{ color: "var(--muted)", fontWeight: 500, fontSize: 14 }}>
           Inventurizační číslo / QR:
         </div>
-        <div style={{ fontWeight: 700, fontSize: 12, color: "#000" }}>
+        <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--fg)' }}>
           {trimmed || "—"}
         </div>
       </div>
@@ -73,10 +73,10 @@ export default function QRCodeInput({
               height: 44,
               marginBottom: 2,
               borderRadius: 12,
-              background: "#f0f1f3",
-              border: "1px solid #e0e0e0",
+              background: "var(--surface-2)",
+              border: "1px solid var(--line)",
               cursor: "pointer",
-              color: "#000",
+              color: 'var(--fg)',
             }}
           >
             <span className="material-icons-round" style={{ fontSize: 22 }}>
@@ -85,20 +85,20 @@ export default function QRCodeInput({
           </button>
         </div>
         {validateAvailability && trimmed && checking && (
-          <div style={{ fontSize: 12, color: "#535353" }}>Kontroluji číslo…</div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>Kontroluji číslo…</div>
         )}
         {showConflict && (
-          <div style={{ fontSize: 12, color: "#FF6262", fontWeight: 600 }}>
+          <div style={{ fontSize: 12, color: "var(--danger)", fontWeight: 600 }}>
             Toto inventurizační číslo / QR je již použito.
           </div>
         )}
         {showOk && (
-          <div style={{ fontSize: 12, color: "#2ecc40", fontWeight: 600 }}>
+          <div style={{ fontSize: 12, color: "var(--ok)", fontWeight: 600 }}>
             Inventurizační číslo / QR je volné.
           </div>
         )}
         {checkError && (
-          <div style={{ fontSize: 12, color: "#FF6262" }}>
+          <div style={{ fontSize: 12, color: "var(--danger)" }}>
             Nepodařilo se ověřit inventurizační číslo / QR.
           </div>
         )}

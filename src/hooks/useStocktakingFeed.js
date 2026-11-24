@@ -1,4 +1,5 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { OFFLINE_SYNCED_EVENT } from "@/offline/offlineFetch";
 import { getAuthHeadersSafe } from "@/utils/token";
 import { useSettings } from "@/hooks/useSettings";
 import { INVENTORY_STATES, INVENTORY_STATES_WITHOUT_UNCHECKED, INVENTORY_DISPLAY_MODE } from "@/utils/inventoryStates";
@@ -204,6 +205,15 @@ export function useStocktakingFeed({
     invalidateFeedCaches();
     await replaceToPage0(viewPageIndex);
   }, [replaceToPage0, viewPageIndex]);
+
+  // Po odeslání změn uložených bez signálu načíst seznam znovu (mohl platit stav jiného uživatele).
+  useEffect(() => {
+    const onSynced = () => {
+      if (enabled && eventId) void refreshFeed();
+    };
+    window.addEventListener(OFFLINE_SYNCED_EVENT, onSynced);
+    return () => window.removeEventListener(OFFLINE_SYNCED_EVENT, onSynced);
+  }, [refreshFeed, enabled, eventId]);
 
   useLayoutEffect(() => {
     clearLegacyFeedSessionStorage();

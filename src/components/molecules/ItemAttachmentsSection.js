@@ -279,7 +279,7 @@ const ItemAttachmentsSection = forwardRef(function ItemAttachmentsSection(
           onAdd={() => fileInputRef.current?.click()}
         />
         {showPendingHint && (
-          <div style={{ fontSize: 11, color: "#888", fontStyle: "italic" }}>
+          <div style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
             {isCreateMode
               ? "Přílohy se uloží po vytvoření objektu"
               : "Změny příloh se uloží tlačítkem Uložit"}
@@ -296,15 +296,15 @@ const ItemAttachmentsSection = forwardRef(function ItemAttachmentsSection(
         />
 
         {!isCreateMode && loading && visibleAttachments.length === 0 && (
-          <div style={{ fontSize: 12, color: "#535353" }}>Načítání příloh…</div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>Načítání příloh…</div>
         )}
 
         {!isCreateMode && error && !loading && (
-          <div style={{ fontSize: 12, color: "#c62828" }}>Chyba načtení příloh</div>
+          <div style={{ fontSize: 12, color: "var(--danger)" }}>Chyba načtení příloh</div>
         )}
 
         {!loading && !error && visibleAttachments.length === 0 && (
-          <div style={{ fontSize: 12, color: "#535353", fontStyle: "italic" }}>Žádné přílohy</div>
+          <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>Žádné přílohy</div>
         )}
 
         {visibleAttachments.length > 0 && (
@@ -383,7 +383,7 @@ export default ItemAttachmentsSection;
 function AttachmentsHeader({ editMode, busy, onAdd }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      <span style={{ fontWeight: 500, fontSize: 12, color: "#535353" }}>Přílohy</span>
+      <span style={{ fontWeight: 500, fontSize: 12, color: "var(--muted)" }}>Přílohy</span>
       {editMode && (
         <button
           type="button"
@@ -395,7 +395,7 @@ function AttachmentsHeader({ editMode, busy, onAdd }) {
             gap: 4,
             background: "none",
             border: "none",
-            color: "#000",
+            color: 'var(--fg)',
             fontSize: 12,
             fontWeight: 600,
             cursor: busy ? "not-allowed" : "pointer",
@@ -417,7 +417,7 @@ function DeleteActions({ busy, onCancel, onConfirm }) {
         type="button"
         onClick={onCancel}
         disabled={busy}
-        style={{ padding: "8px 16px", borderRadius: 12, border: "1px solid #ccc", background: "#fff" }}
+        style={{ padding: "8px 16px", borderRadius: 12, border: "1px solid var(--line)", background: 'var(--surface)' }}
       >
         Zrušit
       </button>
@@ -425,7 +425,7 @@ function DeleteActions({ busy, onCancel, onConfirm }) {
         type="button"
         onClick={onConfirm}
         disabled={busy}
-        style={{ padding: "8px 16px", borderRadius: 12, border: "none", background: "#FF6262", color: "#fff" }}
+        style={{ padding: "8px 16px", borderRadius: 12, border: "none", background: "var(--danger)", color: 'var(--accent-ink)' }}
       >
         Potvrdit
       </button>
@@ -449,13 +449,13 @@ function AttachmentRow({ att, isLast, editMode, loading, disabled, onOpen, onDel
         alignItems: "center",
         gap: 12,
         padding: "12px 16px",
-        borderBottom: isLast ? "none" : "1px solid #e0e0e0",
+        borderBottom: isLast ? "none" : "1px solid var(--line)",
         cursor: loading || disabled ? "wait" : "pointer",
         opacity: loading ? 0.6 : att.pending ? 0.85 : 1,
       }}
       onClick={() => !disabled && onOpen()}
     >
-      <span className="material-icons-round" style={{ fontSize: 22, color: "#535353" }}>
+      <span className="material-icons-round" style={{ fontSize: 22, color: "var(--muted)" }}>
         {attachmentMimeIcon(att.mimeType)}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -463,7 +463,7 @@ function AttachmentRow({ att, isLast, editMode, loading, disabled, onOpen, onDel
           style={{
             fontSize: 13,
             fontWeight: 500,
-            color: "#000",
+            color: 'var(--fg)',
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -471,7 +471,7 @@ function AttachmentRow({ att, isLast, editMode, loading, disabled, onOpen, onDel
         >
           {att.fileName}
         </div>
-        <div style={{ fontSize: 11, color: att.pending ? "#b8860b" : "#888" }}>{subtitle}</div>
+        <div style={{ fontSize: 11, color: att.pending ? "var(--st-mv)" : "var(--muted)" }}>{subtitle}</div>
       </div>
       {editMode && (
         <button
@@ -491,7 +491,7 @@ function AttachmentRow({ att, isLast, editMode, loading, disabled, onOpen, onDel
           }}
           title="Odebrat"
         >
-          <span className="material-icons-round" style={{ fontSize: 20, color: "#FF6262" }}>
+          <span className="material-icons-round" style={{ fontSize: 20, color: "var(--danger)" }}>
             delete
           </span>
         </button>

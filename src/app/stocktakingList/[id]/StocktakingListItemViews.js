@@ -9,6 +9,7 @@ import StocktakingItemCardSkeleton from "@/components/organisms/StocktakingItemC
 const MemoStocktakingItemCard = memo(StocktakingItemCard, (prev, next) => {
     if (prev.compact !== next.compact) return false;
     if (prev.renderActions !== next.renderActions) return false;
+    if (prev.renderQuickActions !== next.renderQuickActions) return false;
     const a = prev.item;
     const b = next.item;
     if (a === b) return true;
@@ -80,6 +81,7 @@ export default function StocktakingListItemViews({
     stocktakingId,
     pageSize,
     renderItemActions,
+    renderItemQuickActions,
     onItemNavigate,
     itemDetailReturnTo,
 }) {
@@ -112,6 +114,7 @@ export default function StocktakingListItemViews({
                             <MemoStocktakingItemCard
                                 item={item}
                                 renderActions={renderItemActions}
+                                renderQuickActions={renderItemQuickActions}
                                 compact={false}
                                 enableLazyImageFetch={true}
                             />
@@ -131,6 +134,7 @@ export default function StocktakingListItemViews({
                         <MemoStocktakingItemCard
                             item={item}
                             renderActions={renderItemActions}
+                                renderQuickActions={renderItemQuickActions}
                             compact={false}
                             enableLazyImageFetch={true}
                         />
@@ -148,6 +152,7 @@ export default function StocktakingListItemViews({
                     <MemoStocktakingItemCard
                         item={item}
                         renderActions={renderItemActions}
+                                renderQuickActions={renderItemQuickActions}
                         compact={true}
                         enableLazyImageFetch={true}
                     />

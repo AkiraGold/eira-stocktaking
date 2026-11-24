@@ -66,7 +66,6 @@ export default function FilterOptionsModal({
                 width: "100%",
                 minHeight: "40px"
             }}>
-                {/* Scrollable content */}
                 <div style={{ 
                     flex: 1, 
                     overflow: "auto", 
@@ -76,7 +75,7 @@ export default function FilterOptionsModal({
                     minHeight: 0
                 }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                        <div style={{ fontSize: "14px", color: "#666", fontWeight: 500 }}>
+                        <div style={{ fontSize: "14px", color: "var(--muted)", fontWeight: 500 }}>
                             Stav:
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -92,8 +91,8 @@ export default function FilterOptionsModal({
                                         gap: "0.75rem",
                                         padding: "0.75rem",
                                         borderRadius: "8px",
-                                        border: "1px solid #e0e0e0",
-                                        backgroundColor: state.includes(opt.value) ? "#f8f9fa" : "white",
+                                        border: "1px solid var(--line)",
+                                        backgroundColor: state.includes(opt.value) ? "var(--surface-2)" : "var(--surface)",
                                         cursor: "pointer",
                                         transition: "all 0.2s ease",
                                         fontSize: "0.875rem",
@@ -101,12 +100,12 @@ export default function FilterOptionsModal({
                                     }}
                                     onMouseEnter={(e) => {
                                         if (!state.includes(opt.value)) {
-                                            e.target.style.backgroundColor = "#f5f5f5";
+                                            e.target.style.backgroundColor = "var(--surface-2)";
                                         }
                                     }}
                                     onMouseLeave={(e) => {
                                         if (!state.includes(opt.value)) {
-                                            e.target.style.backgroundColor = "white";
+                                            e.target.style.backgroundColor = "var(--surface)";
                                         }
                                     }}
                                 >
@@ -117,7 +116,7 @@ export default function FilterOptionsModal({
                                         style={{
                                             width: "18px",
                                             height: "18px",
-                                            accentColor: "#282828",
+                                            accentColor: "var(--ink-soft)",
                                             cursor: "pointer"
                                         }}
                                     />
@@ -128,7 +127,7 @@ export default function FilterOptionsModal({
                     </div>
                     
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                        <div style={{ fontSize: "14px", color: "#666", fontWeight: 500 }}>
+                        <div style={{ fontSize: "14px", color: "var(--muted)", fontWeight: 500 }}>
                             Má poznámku:
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -141,8 +140,8 @@ export default function FilterOptionsModal({
                                         gap: "0.75rem",
                                         padding: "0.75rem",
                                         borderRadius: "8px",
-                                        border: "1px solid #e0e0e0",
-                                        backgroundColor: hasNote.includes(opt.value) ? "#f8f9fa" : "white",
+                                        border: "1px solid var(--line)",
+                                        backgroundColor: hasNote.includes(opt.value) ? "var(--surface-2)" : "var(--surface)",
                                         cursor: "pointer",
                                         transition: "all 0.2s ease",
                                         fontSize: "0.875rem",
@@ -150,12 +149,12 @@ export default function FilterOptionsModal({
                                     }}
                                     onMouseEnter={(e) => {
                                         if (!hasNote.includes(opt.value)) {
-                                            e.target.style.backgroundColor = "#f5f5f5";
+                                            e.target.style.backgroundColor = "var(--surface-2)";
                                         }
                                     }}
                                     onMouseLeave={(e) => {
                                         if (!hasNote.includes(opt.value)) {
-                                            e.target.style.backgroundColor = "white";
+                                            e.target.style.backgroundColor = "var(--surface)";
                                         }
                                     }}
                                 >
@@ -166,7 +165,7 @@ export default function FilterOptionsModal({
                                         style={{
                                             width: "18px",
                                             height: "18px",
-                                            accentColor: "#282828",
+                                            accentColor: "var(--ink-soft)",
                                             cursor: "pointer"
                                         }}
                                     />
@@ -177,10 +176,9 @@ export default function FilterOptionsModal({
                     </div>
                 </div>
                 
-                {/* OK button - OUTSIDE scrollable area */}
                 <div style={{ 
                     flexShrink: 0,
-                    borderTop: "1px solid #e0e0e0",
+                    borderTop: "1px solid var(--line)",
                     paddingTop: "1rem",
                     marginTop: "1rem"
                 }}>
@@ -191,8 +189,8 @@ export default function FilterOptionsModal({
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
-                            background: "#282828",
-                            color: "#fff",
+                            background: "var(--ink-soft)",
+                            color: "var(--on-ink)",
                             border: "none",
                             borderRadius: "1rem",
                             padding: "0.75rem",
@@ -202,10 +200,10 @@ export default function FilterOptionsModal({
                             transition: "background 0.2s ease"
                         }}
                         onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = "#1a1a1a";
+                            e.target.style.backgroundColor = "var(--ink-soft)";
                         }}
                         onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "#282828";
+                            e.target.style.backgroundColor = "var(--ink-soft)";
                         }}
                     >
                         OK

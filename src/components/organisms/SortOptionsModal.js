@@ -18,7 +18,6 @@ export default function SortOptionsModal({
     const [sortOrder, setSortOrder] = useState(initialSortOrder || (orderOptions[0] && orderOptions[0].value));
     const prevIsOpen = useRef(isOpen);
 
-    // Reset local state to initial values when opening
     useEffect(() => {
         if (!prevIsOpen.current && isOpen) {
             setSortBy(initialSortBy || (sortOptions[0] && sortOptions[0].value));
@@ -35,7 +34,6 @@ export default function SortOptionsModal({
     };
 
     const handleCancel = () => {
-        // Reset to initial values
         setSortBy(initialSortBy || (sortOptions[0] && sortOptions[0].value));
         setSortOrder(initialSortOrder || (orderOptions[0] && orderOptions[0].value));
         onClose();
@@ -50,7 +48,6 @@ export default function SortOptionsModal({
                 width: "100%",
                 minHeight: "40px"
             }}>
-                {/* Scrollable content */}
                 <div style={{ 
                     flex: 1, 
                     overflow: "auto", 
@@ -60,7 +57,7 @@ export default function SortOptionsModal({
                     minHeight: 0
                 }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                        <div style={{ fontSize: "14px", color: "#666", fontWeight: 500 }}>
+                        <div style={{ fontSize: "14px", color: "var(--muted)", fontWeight: 500 }}>
                             Seřadit podle:
                         </div>
                         <ButtonGroup
@@ -79,7 +76,7 @@ export default function SortOptionsModal({
                     </div>
                     
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                        <div style={{ fontSize: "14px", color: "#666", fontWeight: 500 }}>
+                        <div style={{ fontSize: "14px", color: "var(--muted)", fontWeight: 500 }}>
                             Pořadí:
                         </div>
                         <ButtonGroup
@@ -96,10 +93,9 @@ export default function SortOptionsModal({
                     </div>
                 </div>
                 
-                {/* OK button - OUTSIDE scrollable area */}
                 <div style={{ 
                     flexShrink: 0,
-                    borderTop: "1px solid #e0e0e0",
+                    borderTop: "1px solid var(--line)",
                     paddingTop: "1rem",
                     marginTop: "1rem"
                 }}>
@@ -110,8 +106,8 @@ export default function SortOptionsModal({
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
-                            background: "#282828",
-                            color: "#fff",
+                            background: "var(--ink-soft)",
+                            color: "var(--on-ink)",
                             border: "none",
                             borderRadius: "1rem",
                             padding: "0.75rem",
@@ -121,10 +117,10 @@ export default function SortOptionsModal({
                             transition: "background 0.2s ease"
                         }}
                         onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = "#1a1a1a";
+                            e.target.style.backgroundColor = "var(--ink-soft)";
                         }}
                         onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "#282828";
+                            e.target.style.backgroundColor = "var(--ink-soft)";
                         }}
                     >
                         OK

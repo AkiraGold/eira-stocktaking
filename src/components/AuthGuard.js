@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import "@/offline/OfflineBoot";
 import { getAuthHeadersSafe, isAuthenticated } from "@/utils/token";
 
 function LoadingScreen() {
@@ -11,10 +12,10 @@ function LoadingScreen() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#f0f1f3",
+        background: "var(--surface-2)",
       }}
     >
-      <div style={{ fontSize: "1rem", color: "#666" }}>Loading...</div>
+      <div style={{ fontSize: "1rem", color: "var(--muted)" }}>Loading...</div>
     </div>
   );
 }

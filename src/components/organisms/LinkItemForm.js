@@ -163,7 +163,7 @@ export default function LinkItemForm({
         <div className="container flex items-center p-4">
           <button
             type="button"
-            className="flex items-center gap-2 rounded-2xl bg-[#282828] p-3 text-white border-none cursor-pointer flex-1 justify-between"
+            className="flex items-center gap-2 rounded-2xl bg-[var(--ink-soft)] p-3 text-white border-none cursor-pointer flex-1 justify-between"
             style={{ fontSize: "0.75rem" }}
             onClick={handleSave}
             disabled={

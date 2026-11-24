@@ -23,6 +23,10 @@ import Button from "@/components/atoms/Button";
 import { Pagination } from "@/components/molecules/Pagination";
 import { readScanListViewMode } from "@/utils/scanListViewMode";
 import { INVENTORY_STATES, getEffectiveInvNumber, isFoundState, isMovedState, isNewState, resolveStateForMove, resolveStateForUpdate } from "@/utils/inventoryStates";
+import ScanResultSheet from "@/components/organisms/ScanResultSheet";
+import { useSettings } from "@/hooks/useSettings";
+import { playScanFeedback } from "@/utils/scanFeedback";
+import { useOfflineStatus } from "@/offline/useOfflineStatus";
 import { buildInventoryStateContextRows } from "@/components/molecules/InventoryStateContextRows";
 import {
     buildStocktakingNewItemUrl,
@@ -116,6 +120,15 @@ export default function ScanSessionClient() {
     const [isUpdatingItem, setIsUpdatingItem] = useState(false);
 
     const [scanNotice, setScanNotice] = useState({ open: false, item: null });
+    /** Výsledek skenu ve spodním panelu: { kind: confirm|checked|move|done, item, loc?, undo?, message? } */
+    const [scanSheet, setScanSheet] = useState(null);
+    const sheetTimerRef = useRef(null);
+    const { scanAutoMarkFound, scanFeedback } = useSettings();
+    const { online } = useOfflineStatus();
+    const scanFeedbackRef = useRef(scanFeedback);
+    scanFeedbackRef.current = scanFeedback;
+    const scanAutoMarkFoundRef = useRef(scanAutoMarkFound);
+    scanAutoMarkFoundRef.current = scanAutoMarkFound;
 
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
     const [moveItem, setMoveItem] = useState(null);
@@ -164,14 +177,113 @@ export default function ScanSessionClient() {
         setScanNotice({ open: false, item: null });
     }, []);
 
+    const clearSheetTimer = useCallback(() => {
+        if (sheetTimerRef.current) {
+            clearTimeout(sheetTimerRef.current);
+            sheetTimerRef.current = null;
+        }
+    }, []);
+
+    const closeScanSheet = useCallback(() => {
+        clearSheetTimer();
+        setScanSheet(null);
+    }, [clearSheetTimer]);
+
+    useEffect(() => clearSheetTimer, [clearSheetTimer]);
+
+    const feedback = useCallback((kind) => {
+        if (scanFeedbackRef.current) playScanFeedback(kind);
+    }, []);
+
+    /** Uloží změnu předmětu a ukáže panel „Uloženo" s možností vrátit zpět. */
+    const saveFromSheet = useCallback(
+        async (item, patch, message) => {
+            clearSheetTimer();
+            setIsUpdatingItem(true);
+            try {
+                const { image, ...rest } = item;
+                const result = await updateItem({ ...rest, stocktakingId, ...patch });
+                if (!result) {
+                    feedback("error");
+                    setScanSheet(null);
+                    showActionModal("Chyba", "Změnu se nepodařilo uložit.", false);
+                    return;
+                }
+                const saved = { ...item, ...result, state: result.state ?? patch.state ?? item.state, image: item.image };
+                patchFeedItem(saved);
+                refreshFeed();
+                setLastScannedItem(saved);
+                feedback("success");
+                setScanSheet({
+                    kind: "done",
+                    item: saved,
+                    message,
+                    undo: { item: saved, patch: { state: item.state, location: item.location } },
+                });
+                sheetTimerRef.current = setTimeout(() => {
+                    sheetTimerRef.current = null;
+                    setScanSheet((cur) => (cur?.kind === "done" ? null : cur));
+                }, 4000);
+            } finally {
+                setIsUpdatingItem(false);
+            }
+        },
+        [clearSheetTimer, updateItem, stocktakingId, patchFeedItem, refreshFeed, feedback, showActionModal]
+    );
+
+    const markFoundFromSheet = useCallback(
+        (item) =>
+            saveFromSheet(
+                item,
+                { state: resolveStateForUpdate(INVENTORY_STATES.FOUND, item.state) },
+                "Označeno jako nalezeno"
+            ),
+        [saveFromSheet]
+    );
+
+    const moveHereFromSheet = useCallback(
+        (item, loc) =>
+            saveFromSheet(item, { location: loc, state: resolveStateForMove(item.state) }, "Přesunuto do této místnosti"),
+        [saveFromSheet]
+    );
+
+    const undoFromSheet = useCallback(async () => {
+        const undo = scanSheet?.undo;
+        if (!undo) return;
+        clearSheetTimer();
+        setIsUpdatingItem(true);
+        try {
+            const { image, ...rest } = undo.item;
+            const result = await updateItem({ ...rest, stocktakingId, ...undo.patch });
+            if (result) {
+                const restored = { ...undo.item, ...result, ...undo.patch, image: undo.item.image };
+                patchFeedItem(restored);
+                refreshFeed();
+                setLastScannedItem(restored);
+                setScanSheet(null);
+            } else {
+                showActionModal("Chyba", "Změnu se nepodařilo vrátit.", false);
+            }
+        } finally {
+            setIsUpdatingItem(false);
+        }
+    }, [scanSheet, clearSheetTimer, updateItem, stocktakingId, patchFeedItem, refreshFeed, showActionModal]);
+
+    const scanSheetRef = useRef(scanSheet);
+    scanSheetRef.current = scanSheet;
+
     const handleScan = useCallback((scannedValue) => {
+        // Stejný kód znovu před kamerou nemá zavřít otevřený panel s volbou.
+        const open = scanSheetRef.current;
+        if (open && open.kind !== "done" && open.qr && open.qr === String(scannedValue).trim()) return;
         setLastScannedItem(null);
         resetOutsideInventuraItem();
         setIsNotInInventoryModalOpen(false);
         closeScanNotice();
+        closeScanSheet();
         setScanPending(true);
         setScannedQr(scannedValue);
-    }, [closeScanNotice, resetOutsideInventuraItem]);
+    }, [closeScanNotice, closeScanSheet, resetOutsideInventuraItem]);
 
     const addScannedItemToCurrentInventory = useCallback(async () => {
         setIsUpdatingItem(true);
@@ -238,31 +350,35 @@ export default function ScanSessionClient() {
                     loc.room !== "" &&
                     String(apiItem.location.room) !== String(loc.room)
             );
+            const feedMatch = feedItemsRef.current.find((i) => Number(i.id) === Number(apiItem.id));
+            const effectiveState = apiItem.state ?? feedMatch?.state;
+            const sheetItem = {
+                ...apiItem,
+                state: effectiveState ?? apiItem.state,
+                image: apiItem.image ?? feedMatch?.image,
+                lastCheck: apiItem.lastCheck ?? feedMatch?.lastCheck,
+                note: apiItem.note ?? feedMatch?.note,
+                description: apiItem.description ?? feedMatch?.description,
+            };
             if (locationMismatch) {
-                setMoveItem(apiItem);
-                setMoveNewLocation(loc);
-                setIsMoveModalOpen(true);
+                feedback("warning");
+                setScanSheet({ kind: "move", item: sheetItem, loc, qr: normalizedScannedQr });
+            } else if (isFoundState(effectiveState) || isMovedState(effectiveState) || isNewState(effectiveState)) {
+                feedback("warning");
+                setScanSheet({ kind: "checked", item: sheetItem, qr: normalizedScannedQr });
+            } else if (scanAutoMarkFoundRef.current) {
+                markFoundFromSheet(sheetItem);
             } else {
-                const feedMatch = feedItemsRef.current.find((i) => Number(i.id) === Number(apiItem.id));
-                const effectiveState = apiItem.state ?? feedMatch?.state;
-                const noticeItem = {
-                    ...apiItem,
-                    state: effectiveState ?? apiItem.state,
-                    image: apiItem.image ?? feedMatch?.image,
-                    lastCheck: apiItem.lastCheck ?? feedMatch?.lastCheck,
-                    note: apiItem.note ?? feedMatch?.note,
-                    description: apiItem.description ?? feedMatch?.description,
-                };
-                if (isFoundState(effectiveState) || isMovedState(effectiveState) || isNewState(effectiveState)) {
-                    setScanNotice({ open: true, item: noticeItem });
-                }
+                feedback("success");
+                setScanSheet({ kind: "confirm", item: sheetItem, qr: normalizedScannedQr });
             }
         } else {
+            feedback("warning");
             setPendingCreateQr(normalizedScannedQr);
             setIsNotInInventoryModalOpen(true);
             lookupOutsideInventura(normalizedScannedQr);
         }
-    }, [apiItem, apiLoading, apiError, scannedQr, resolvedQr, getLocation, lookupOutsideInventura]);
+    }, [apiItem, apiLoading, apiError, scannedQr, resolvedQr, getLocation, lookupOutsideInventura, feedback, markFoundFromSheet]);
 
     const renderItemActions = useCallback(
         (item) => (
@@ -339,7 +455,7 @@ export default function ScanSessionClient() {
     if (!canFetch) {
         return (
             <main className="relative min-h-screen flex flex-col items-center p-4">
-                <div style={{ color: "#FF6262", fontWeight: 600 }}>Neplatná inventura (chybí nebo je neplatné ID).</div>
+                <div style={{ color: "var(--danger)", fontWeight: 600 }}>Neplatná inventura (chybí nebo je neplatné ID).</div>
             </main>
         );
     }
@@ -347,7 +463,7 @@ export default function ScanSessionClient() {
     return (
         <main
             className="relative flex flex-col items-center"
-            style={{ height: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: "#fff" }}
+            style={{ height: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: 'var(--surface)' }}
         >
             <div
                 className="container"
@@ -408,7 +524,7 @@ export default function ScanSessionClient() {
                         <div
                             style={{
                                 borderRadius: 16,
-                                background: "#f0f1f3",
+                                background: "var(--surface-2)",
                                 padding: "0.65rem 0.75rem",
                                 display: "flex",
                                 flexDirection: "row",
@@ -419,7 +535,7 @@ export default function ScanSessionClient() {
                         >
                             <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
                                 {scanPending ? (
-                                    <div style={{ display: "flex", alignItems: "center", gap: 12, color: "#535353", fontSize: 14 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--muted)", fontSize: 14 }}>
                                         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500" />
                                         Vyhledávám položku…
                                     </div>
@@ -436,7 +552,7 @@ export default function ScanSessionClient() {
                                         <CardItemName>{lastScannedItem.name}</CardItemName>
                                     </div>
                                 ) : (
-                                    <div style={{ fontSize: 13, color: "#888" }}>Naskenujte QR kód položky.</div>
+                                    <div style={{ fontSize: 13, color: "var(--muted)" }}>Naskenujte QR kód položky.</div>
                                 )}
                             </div>
                             <button
@@ -450,12 +566,12 @@ export default function ScanSessionClient() {
                                     gap: 6,
                                     padding: "8px 14px",
                                     borderRadius: 999,
-                                    border: "1px solid #e0e0e0",
-                                    background: "#fff",
+                                    border: "1px solid var(--line)",
+                                    background: 'var(--surface)',
                                     cursor: "pointer",
                                     fontWeight: 600,
                                     fontSize: 13,
-                                    color: "#282828",
+                                    color: "var(--fg)",
                                     boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                                     flexShrink: 0,
                                 }}
@@ -482,7 +598,7 @@ export default function ScanSessionClient() {
                     padding: 0,
                     margin: 0,
                     cursor: scannerCollapsed ? "pointer" : "default",
-                    background: "rgba(0, 0, 0, 0.42)",
+                    background: "var(--overlay)",
                     WebkitTapHighlightColor: "transparent",
                     opacity: scannerCollapsed ? 1 : 0,
                     pointerEvents: scannerCollapsed ? "auto" : "none",
@@ -501,7 +617,7 @@ export default function ScanSessionClient() {
                     maxHeight: "min(92dvh, calc(100dvh - env(safe-area-inset-top) - 8px))",
                     display: "flex",
                     flexDirection: "column",
-                    background: "#fff",
+                    background: 'var(--surface)',
                     borderTopLeftRadius: 20,
                     borderTopRightRadius: 20,
                     boxShadow: "0 -12px 48px rgba(0,0,0,0.18), 0 -1px 0 rgba(0,0,0,0.06)",
@@ -522,8 +638,8 @@ export default function ScanSessionClient() {
                         padding: "12px 16px",
                         margin: "12px 16px 8px",
                         borderRadius: 14,
-                        background: "#f2f2f7",
-                        color: "#1c1c1e",
+                        background: "var(--surface-2)",
+                        color: "var(--fg)",
                         border: "none",
                         cursor: "pointer",
                         fontWeight: 600,
@@ -538,7 +654,7 @@ export default function ScanSessionClient() {
                     Zavřít seznam
                 </button>
                 {error ? (
-                    <div style={{ padding: "0 16px", color: "#c00" }}>
+                    <div style={{ padding: "0 16px", color: "var(--danger)" }}>
                         Chyba: {error.message}
                     </div>
                 ) : null}
@@ -627,7 +743,7 @@ export default function ScanSessionClient() {
                             Založit novou položku
                         </Button>
                         <Button
-                            icon="link"
+                            icon="search"
                             iconPosition="right"
                             onClick={() => {
                                 setIsAddItemModalOpen(false);
@@ -638,7 +754,7 @@ export default function ScanSessionClient() {
                                 );
                             }}
                         >
-                            Propojit existující
+                            Najít v majetku
                         </Button>
                         <Button
                             variant="secondary"
@@ -653,20 +769,20 @@ export default function ScanSessionClient() {
 
                 <CenteredModal isOpen={isNotInInventoryModalOpen} onClose={() => setIsNotInInventoryModalOpen(false)} title="QR Sken">
                     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                        <div style={{ color: "#FF6262", fontWeight: 600 }}>
+                        <div style={{ color: "var(--danger)", fontWeight: 600 }}>
                             Položka není součástí inventurního seznamu.
                         </div>
                         {isLookingUpOutsideInventura && (
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "0.5rem 0" }}>
                                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500" />
-                                <div style={{ fontSize: 13, color: "#535353" }}>Vyhledávám položku podle QR...</div>
+                                <div style={{ fontSize: 13, color: "var(--muted)" }}>Vyhledávám položku podle QR...</div>
                             </div>
                         )}
                         {!isLookingUpOutsideInventura && outsideInventuraItem && (
                             <div
                                 style={{
                                     borderRadius: 16,
-                                    background: "#f0f1f3",
+                                    background: "var(--surface-2)",
                                     overflow: "hidden",
                                     display: "flex",
                                     flexDirection: "column",
@@ -680,9 +796,9 @@ export default function ScanSessionClient() {
                                 />
                                 <div className="p-4 gap-2 flex flex-col">
                                     <CardItemName>{outsideInventuraItem.name}</CardItemName>
-                                    <div style={{ fontSize: 12, color: "#535353" }}>{outsideInventuraItem.note}</div>
+                                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{outsideInventuraItem.note}</div>
                                     {outsideInventuraItem.qr && (
-                                        <div style={{ fontSize: 12, color: "#535353", fontStyle: "italic" }}>
+                                        <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>
                                             QR kód: {outsideInventuraItem.qr}
                                         </div>
                                     )}
@@ -691,7 +807,7 @@ export default function ScanSessionClient() {
                         )}
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", width: "100%" }}>
                             {!isLookingUpOutsideInventura && outsideInventuraItem && !getEffectiveInvNumber(outsideInventuraItem) && (
-                                <div style={{ fontSize: 12, color: "#FF6262" }}>
+                                <div style={{ fontSize: 12, color: "var(--danger)" }}>
                                     Položka nemá inventární číslo — nelze ji přidat do inventury.
                                 </div>
                             )}
@@ -700,7 +816,12 @@ export default function ScanSessionClient() {
                                     {isAddingOutsideItem ? "Přidávám..." : "Přidat tuto položku do inventury"}
                                 </Button>
                             )}
-                            {!isLookingUpOutsideInventura && !outsideInventuraItem && (
+                            {!online && (
+                                <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.45 }}>
+                                    Bez signálu: předmět není v datech stažených do telefonu. Přidat nebo založit ho půjde po připojení.
+                                </div>
+                            )}
+                            {online && !isLookingUpOutsideInventura && !outsideInventuraItem && (
                                 <Button
                                     icon="add"
                                     iconPosition="right"
@@ -727,11 +848,11 @@ export default function ScanSessionClient() {
                 <CenteredModal isOpen={isMoveModalOpen} onClose={() => setIsMoveModalOpen(false)} title="Přesun položky" disableClickAway={isLocationPickerOpen}>
                     {moveItem && (
                         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                            <div style={{ color: "#0074D9", fontWeight: 600 }}>Položka bude přesunuta do jiné místnosti</div>
+                            <div style={{ color: "var(--info)", fontWeight: 600 }}>Položka bude přesunuta do jiné místnosti</div>
                             <div
                                 style={{
                                     borderRadius: 16,
-                                    background: "#f0f1f3",
+                                    background: "var(--surface-2)",
                                     overflow: "hidden",
                                     display: "flex",
                                     flexDirection: "column",
@@ -748,16 +869,16 @@ export default function ScanSessionClient() {
                                 <div className="p-4 gap-4 flex flex-col">
                                     <div>
                                         <CardItemName>{moveItem.name}</CardItemName>
-                                        <div style={{ fontSize: 12, color: "#535353" }}>{moveItem.note}</div>
+                                        <div style={{ fontSize: 12, color: "var(--muted)" }}>{moveItem.note}</div>
                                     </div>
-                                    <div style={{ fontStyle: "italic", fontSize: 12, color: "#535353" }}>
+                                    <div style={{ fontStyle: "italic", fontSize: 12, color: "var(--muted)" }}>
                                         Poslední kontrola {moveItem.lastCheck ? new Date(moveItem.lastCheck).toLocaleString() : ""}
                                     </div>
                                 </div>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, width: "100%" }}>
                                 <LocationPicker value={moveItem.location} label="Aktuální umístění:" editMode={false} />
-                                <span className="material-icons-round" style={{ fontSize: 24, color: "#000" }}>
+                                <span className="material-icons-round" style={{ fontSize: 24, color: 'var(--fg)' }}>
                                     arrow_downward
                                 </span>
                                 <LocationPicker
@@ -817,7 +938,7 @@ export default function ScanSessionClient() {
                                     margin: 0,
                                     fontSize: 13,
                                     lineHeight: 1.45,
-                                    color: "#535353",
+                                    color: "var(--muted)",
                                 }}
                             >
                                 {SCAN_NOTICE_DETAIL}
@@ -855,6 +976,30 @@ export default function ScanSessionClient() {
                         </div>
                     ) : null}
                 </CenteredModal>
+
+                <ScanResultSheet
+                    sheet={scanSheet}
+                    onClose={closeScanSheet}
+                    onMarkFound={() => scanSheet?.item && markFoundFromSheet(scanSheet.item)}
+                    onMoveHere={() => scanSheet?.item && moveHereFromSheet(scanSheet.item, scanSheet.loc)}
+                    onMoveElsewhere={() => {
+                        const it = scanSheet?.item;
+                        const loc = scanSheet?.loc;
+                        closeScanSheet();
+                        if (!it) return;
+                        setMoveItem(it);
+                        setMoveNewLocation(loc ?? it.location);
+                        setIsMoveModalOpen(true);
+                    }}
+                    onEdit={() => {
+                        const id = scanSheet?.item?.id;
+                        closeScanSheet();
+                        if (id) {
+                            router.push(buildStocktakingItemUrl(stocktakingId, id, { returnTo: scanReturnTo, edit: true }));
+                        }
+                    }}
+                    onUndo={undoFromSheet}
+                />
 
                 <ActionFeedbackModal
                     isOpen={actionModalOpen}

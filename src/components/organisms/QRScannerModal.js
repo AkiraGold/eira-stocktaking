@@ -48,12 +48,10 @@ export default function QRScannerModal({ isOpen, onClose, onScan, validate }) {
                 setDisplayMessage(result.message || "QR není platný.");
             }
         } else {
-            // No validation: just send the scanned string and close
             lastSubmittedRef.current = scannedDataString;
             onScan(scannedDataString);
             onClose();
         }
-        // Only run when scannedDataString changes
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scannedDataString]);
 
@@ -72,8 +70,6 @@ export default function QRScannerModal({ isOpen, onClose, onScan, validate }) {
             setScannedDataString(candidate);
             setScannerError(false);
         } else if (err) {
-            //   console.error("QR Scan Error:", err);
-            //   setDisplayMessage("Chyba skeneru. Zkontrolujte oprávnění kamery.");
             setScannerError(true);
             setScannedDataString(null);
         }
@@ -89,7 +85,7 @@ export default function QRScannerModal({ isOpen, onClose, onScan, validate }) {
             width="90vw"
         >
             <div style={{
-                background: "#fff",
+                background: 'var(--surface)',
                 padding: "1rem",
                 textAlign: "center",
                 position: "relative",
@@ -128,7 +124,7 @@ export default function QRScannerModal({ isOpen, onClose, onScan, validate }) {
                 </div>
 
                 <div style={{
-                    color: "#333",
+                    color: "var(--fg)",
                     whiteSpace: "pre-line",
                     fontSize: "0.875rem",
                     padding: "0.75rem 0",

@@ -12,9 +12,9 @@ const BASE_STYLE = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  background: '#282828',
-  color: '#fff',
-  border: '1px solid #282828',
+  background: 'var(--accent)',
+  color: 'var(--accent-ink)',
+  border: '1px solid var(--accent)',
   borderRadius: '1rem',
   padding: '0.75rem',
   fontSize: '0.75rem',
@@ -23,9 +23,9 @@ const BASE_STYLE = {
 };
 
 const SECONDARY_STYLE = {
-  background: '#f0f1f3',
-  color: '#282828',
-  border: '1px solid #d1d1d1',
+  background: 'var(--surface)',
+  color: 'var(--fg)',
+  border: '1px solid var(--line)',
 };
 
 const Button = ({
@@ -39,10 +39,11 @@ const Button = ({
 }) => {
   const isIconOnly = !children && icon;
   const variantClass = VARIANT_CLASSES[variant] || '';
-  const mergedStyle =
+  const baseMerged =
     variant === 'secondary'
       ? { ...BASE_STYLE, ...SECONDARY_STYLE, ...style }
       : { ...BASE_STYLE, ...style };
+  const mergedStyle = rest.disabled ? { ...baseMerged, opacity: 0.5, cursor: 'not-allowed' } : baseMerged;
 
   // Render icon: string = material-icons-round, else as node
   const renderIcon = () => {
@@ -62,13 +63,13 @@ const Button = ({
 
   return (
     <button
-      className={`inline-flex items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#282828] ${variantClass} ${isIconOnly ? 'p-2 w-10 h-10 justify-center' : ''} ${className}`}
+      className={`inline-flex items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[color:var(--accent)] ${variantClass} ${isIconOnly ? 'p-2 w-10 h-10 justify-center' : ''} ${className}`}
       style={mergedStyle}
       onMouseOver={e => {
-        if (variant === 'secondary') e.currentTarget.style.background = '#e5e6e8';
+        if (variant === 'secondary') e.currentTarget.style.background = 'var(--surface-2)';
       }}
       onMouseOut={e => {
-        if (variant === 'secondary') e.currentTarget.style.background = '#f0f1f3';
+        if (variant === 'secondary') e.currentTarget.style.background = 'var(--surface)';
       }}
       {...rest}
     >

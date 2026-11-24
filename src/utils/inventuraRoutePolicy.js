@@ -4,6 +4,7 @@
  */
 const EXEMPT_EXACT_PATHS = new Set([
   "/stocktakingList", // výběr inventury (bez aktivní je jinak dead-end)
+  "/profile", // profil a nastavení nepotřebují inventuru
   "/error",
   "/unavailable",
 ]);

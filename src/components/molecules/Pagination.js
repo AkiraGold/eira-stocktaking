@@ -11,11 +11,11 @@ const pillBase = {
     height: 36,
     padding: "0 10px",
     borderRadius: 8,
-    border: "1px solid #ccc",
+    border: "1px solid var(--line)",
     fontSize: 14,
     fontWeight: 600,
-    background: "#fff",
-    color: "#222",
+    background: 'var(--surface)',
+    color: "var(--fg)",
 };
 
 function PageArrow({ direction, disabled, onClick, ariaLabel }) {
@@ -53,7 +53,7 @@ function PageNumberStrip({ pageList, active1Based, disabled, onSelect1Based, scr
         >
             {pageList.map((entry, idx) =>
                 entry === "ellipsis" ? (
-                    <span key={`gap-${idx}`} style={{ color: "#888", padding: "0 4px" }}>
+                    <span key={`gap-${idx}`} style={{ color: "var(--muted)", padding: "0 4px" }}>
                         …
                     </span>
                 ) : (
@@ -68,9 +68,9 @@ function PageNumberStrip({ pageList, active1Based, disabled, onSelect1Based, scr
                         style={{
                             ...pillBase,
                             cursor: disabled ? "wait" : "pointer",
-                            background: entry === active1Based ? "#282828" : "#fff",
-                            color: entry === active1Based ? "#fff" : "#222",
-                            borderColor: entry === active1Based ? "#282828" : "#ccc",
+                            background: entry === active1Based ? "var(--accent)" : "var(--surface)",
+                            color: entry === active1Based ? "var(--accent-ink)" : "var(--fg)",
+                            borderColor: entry === active1Based ? "var(--accent)" : "var(--line)",
                         }}
                     >
                         {entry}

@@ -17,10 +17,10 @@ function LoadingScreen() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#f0f1f3",
+        background: "var(--surface-2)",
       }}
     >
-      <div style={{ fontSize: "1rem", color: "#666" }}>Loading...</div>
+      <div style={{ fontSize: "1rem", color: "var(--muted)" }}>Loading...</div>
     </div>
   );
 }
@@ -38,13 +38,13 @@ function BlockScreen({ title, message }) {
         gap: 16,
         padding: "2rem",
         textAlign: "center",
-        background: "#f0f1f3",
+        background: "var(--surface-2)",
         boxSizing: "border-box",
       }}
     >
       <div style={{ fontSize: 40 }}>🔒</div>
-      <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "#282828" }}>{title}</div>
-      <p style={{ color: "#535353", fontSize: 14, lineHeight: 1.5, maxWidth: 360, margin: 0 }}>
+      <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--fg)" }}>{title}</div>
+      <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.5, maxWidth: 360, margin: 0 }}>
         {message}
       </p>
       <Link
@@ -53,8 +53,8 @@ function BlockScreen({ title, message }) {
           marginTop: 8,
           padding: "12px 20px",
           borderRadius: 12,
-          background: "#282828",
-          color: "#fff",
+          background: "var(--ink-soft)",
+          color: "var(--on-ink)",
           textDecoration: "none",
           fontWeight: 600,
           fontSize: 13,

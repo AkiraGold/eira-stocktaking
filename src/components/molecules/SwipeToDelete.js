@@ -19,7 +19,6 @@ export default function SwipeToDelete({ onConfirm }) {
         if (sliderPosition > containerWidth - sliderWidth - 5) {
             onConfirm();
         }
-        // Snap back
         setSliderPosition(0);
     };
 
@@ -29,7 +28,6 @@ export default function SwipeToDelete({ onConfirm }) {
         const sliderWidth = sliderRef.current.offsetWidth;
         let newX = (e.clientX || e.touches[0].clientX) - containerRect.left - (sliderWidth / 2);
 
-        // Clamp the position
         if (newX < 0) newX = 0;
         if (newX > containerRect.width - sliderWidth) newX = containerRect.width - sliderWidth;
 
@@ -58,7 +56,7 @@ export default function SwipeToDelete({ onConfirm }) {
                 userSelect: 'none'
             }}
         >
-            <span style={{ color: '#FF3F44', fontWeight: 600, fontSize: 12 }}>
+            <span style={{ color: 'var(--danger)', fontWeight: 600, fontSize: 12 }}>
                 Pro smazání přejeďte doprava
             </span>
             <div
@@ -72,14 +70,14 @@ export default function SwipeToDelete({ onConfirm }) {
                     width: 48,
                     height: 48,
                     borderRadius: 24,
-                    background: '#FF3F44',
+                    background: 'var(--danger)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'grab'
                 }}
             >
-                <span className="material-icons-round" style={{ fontSize: 24, color: '#fff' }}>
+                <span className="material-icons-round" style={{ fontSize: 24, color: 'var(--accent-ink)' }}>
                     keyboard_double_arrow_right
                 </span>
             </div>

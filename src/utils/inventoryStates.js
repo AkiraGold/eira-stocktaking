@@ -118,3 +118,36 @@ export const INVENTORY_DISPLAY_MODE = {
   WORKFLOW: "workflow",
 };
 
+
+export function isUncheckedState(value) {
+  return matchesInventoryState(value, INVENTORY_STATES.UNCHECKED);
+}
+
+/**
+ * Popisek, ikona (Material Icons Round) a barvy stavu pro zobrazení v seznamu.
+ * Stav se tak nerozlišuje jen barvou pozadí karty.
+ */
+export const INVENTORY_STATE_META = {
+  [INVENTORY_STATES.UNCHECKED]: { label: "Nezkontrolováno", icon: "radio_button_unchecked", color: "var(--st-un)", bg: "var(--st-un-bg)" },
+  [INVENTORY_STATES.FOUND]: { label: "Nalezeno", icon: "check_circle", color: "var(--st-ok)", bg: "var(--st-ok-bg)" },
+  [INVENTORY_STATES.NOT_FOUND]: { label: "Nenalezeno", icon: "cancel", color: "var(--st-no)", bg: "var(--st-no-bg)" },
+  [INVENTORY_STATES.MOVED]: { label: "Přesun", icon: "swap_horiz", color: "var(--st-mv)", bg: "var(--st-mv-bg)" },
+  [INVENTORY_STATES.NEW]: { label: "Nový", icon: "add_circle", color: "var(--st-new)", bg: "var(--st-new-bg)" },
+};
+
+/** Pořadí stavů ve filtru (čipy i okno Filtry). */
+export const INVENTORY_STATE_FILTER_ORDER = [
+  INVENTORY_STATES.UNCHECKED,
+  INVENTORY_STATES.FOUND,
+  INVENTORY_STATES.NOT_FOUND,
+  INVENTORY_STATES.MOVED,
+  INVENTORY_STATES.NEW,
+];
+
+export function getInventoryStateMeta(value) {
+  if (value == null) return null;
+  const key = Object.keys(INVENTORY_STATE_META).find((stateConst) =>
+    matchesInventoryState(value, stateConst)
+  );
+  return key ? INVENTORY_STATE_META[key] : null;
+}

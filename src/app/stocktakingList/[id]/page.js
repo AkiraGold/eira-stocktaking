@@ -18,10 +18,13 @@ import CardItemName from "@/components/atoms/CardItemName";
 import StocktakingItemCardSkeleton from "@/components/organisms/StocktakingItemCardSkeleton";
 import StocktakingListItemViews from "./StocktakingListItemViews";
 import FilterOptionsModal from "@/components/organisms/FilterOptionsModal";
+import StateFilterChips from "@/components/molecules/StateFilterChips";
+import QuickStateActions from "@/components/molecules/QuickStateActions";
+import UndoToast from "@/components/molecules/UndoToast";
 import Button from "@/components/atoms/Button";
 import { Pagination } from "@/components/molecules/Pagination";
 import { useSettings } from "@/hooks/useSettings";
-import { INVENTORY_STATES, INVENTORY_DISPLAY_MODE, getEffectiveInvNumber, isNewState, resolveStateForMove, resolveStateForUpdate, shouldShowMarkFoundAction } from "@/utils/inventoryStates";
+import { INVENTORY_STATES, INVENTORY_DISPLAY_MODE, getEffectiveInvNumber, isNewState, isUncheckedState, resolveStateForMove, resolveStateForUpdate, shouldShowMarkFoundAction } from "@/utils/inventoryStates";
 import { buildInventoryStateContextRows } from "@/components/molecules/InventoryStateContextRows";
 import {
     buildStocktakingNewItemUrl,
@@ -134,7 +137,6 @@ function StocktakingListContent() {
     const bottomBarRef = useRef(null);
     const [bottomPadding, setBottomPadding] = useState(0);
 
-    // Add state for the move modal and selected item/location
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
     const [moveItem, setMoveItem] = useState(null);
     const [moveNewLocation, setMoveNewLocation] = useState(null);
@@ -251,7 +253,99 @@ function StocktakingListContent() {
         }
     }, [apiItem, apiLoading, apiError, scannedQr, resolvedQr, location, lookupOutsideInventura]);
 
-    // Function to render item actions (context menu)
+    // Rychlé nastavení stavu přímo v seznamu (bez okna „Hotovo“), s možností vrátit zpět.
+    const UNDO_TIMEOUT_MS = 6000;
+    const [pendingStateIds, setPendingStateIds] = useState(() => new Set());
+    const [stateToast, setStateToast] = useState(null);
+    const stateToastTimerRef = useRef(null);
+
+    const clearStateToastTimer = useCallback(() => {
+        if (stateToastTimerRef.current) {
+            clearTimeout(stateToastTimerRef.current);
+            stateToastTimerRef.current = null;
+        }
+    }, []);
+
+    const showStateToast = useCallback((toast) => {
+        clearStateToastTimer();
+        setStateToast(toast);
+        stateToastTimerRef.current = setTimeout(() => setStateToast(null), UNDO_TIMEOUT_MS);
+    }, [clearStateToastTimer]);
+
+    useEffect(() => clearStateToastTimer, [clearStateToastTimer]);
+
+    const setItemPending = useCallback((id, isPending) => {
+        setPendingStateIds((prev) => {
+            const next = new Set(prev);
+            if (isPending) next.add(id); else next.delete(id);
+            return next;
+        });
+    }, []);
+
+    const applyItemState = useCallback(async (item, targetState) => {
+        const { image, ...rest } = item;
+        const result = await updateItem({ ...rest, stocktakingId, state: resolveStateForUpdate(targetState, item.state) });
+        if (!result) return null;
+        const updated = { ...item, ...result, state: result.state ?? targetState };
+        patchFeedItem(updated);
+        return updated;
+    }, [updateItem, stocktakingId, patchFeedItem]);
+
+    const quickSetState = useCallback(async (item, targetState) => {
+        if (pendingStateIds.has(item.id)) return;
+        setItemPending(item.id, true);
+        try {
+            const updated = await applyItemState(item, targetState);
+            if (!updated) {
+                showStateToast({ kind: "error", message: "Stav se nepodařilo uložit. Zkuste to znovu." });
+                return;
+            }
+            const label = targetState === INVENTORY_STATES.FOUND ? "nalezeno" : "nenalezeno";
+            showStateToast({
+                kind: "success",
+                message: `${item.name || "Předmět"}: ${label}`,
+                undoable: true,
+                previous: item,
+            });
+            await refreshFeed();
+        } finally {
+            setItemPending(item.id, false);
+        }
+    }, [pendingStateIds, setItemPending, applyItemState, showStateToast, refreshFeed]);
+
+    const undoQuickSetState = useCallback(async () => {
+        const previous = stateToast?.previous;
+        if (!previous) return;
+        clearStateToastTimer();
+        setStateToast((t) => (t ? { ...t, undoing: true, message: "Vracím zpět..." } : t));
+        setItemPending(previous.id, true);
+        try {
+            const restored = await applyItemState(previous, previous.state);
+            if (!restored) {
+                showStateToast({ kind: "error", message: "Změnu se nepodařilo vrátit. Upravte stav ručně." });
+                return;
+            }
+            showStateToast({ kind: "success", message: "Změna stavu byla vrácena." });
+            await refreshFeed();
+        } finally {
+            setItemPending(previous.id, false);
+        }
+    }, [stateToast, clearStateToastTimer, setItemPending, applyItemState, showStateToast, refreshFeed]);
+
+    const renderItemQuickActions = useCallback(
+        (item) => {
+            if (!isUncheckedState(item.state)) return null;
+            return (
+                <QuickStateActions
+                    pending={pendingStateIds.has(item.id)}
+                    onMarkFound={() => quickSetState(item, INVENTORY_STATES.FOUND)}
+                    onMarkNotFound={() => quickSetState(item, INVENTORY_STATES.NOT_FOUND)}
+                />
+            );
+        },
+        [pendingStateIds, quickSetState]
+    );
+
     const renderItemActions = useCallback(
         (item) => (
             <ContextButton>
@@ -319,14 +413,14 @@ function StocktakingListContent() {
     if (!canFetch) {
         return (
             <main className="relative min-h-screen flex flex-col items-center p-4">
-                <div style={{ color: '#FF6262', fontWeight: 600 }}>Neplatná inventura (chybí nebo je neplatné ID).</div>
+                <div style={{ color: 'var(--danger)', fontWeight: 600 }}>Neplatná inventura (chybí nebo je neplatné ID).</div>
             </main>
         );
     }
 
     return (
         <main className="relative min-h-screen flex flex-col items-center">
-            <div className="container" style={{ minHeight: "100vh", background: "#fff", display: "flex", padding: "1rem", paddingBottom: `calc(1rem + ${bottomPadding}px)`, flexDirection: "column", gap: "1rem" }}>
+            <div className="container" style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", padding: "1rem", paddingBottom: `calc(1rem + ${bottomPadding}px)`, flexDirection: "column", gap: "1rem" }}>
                 <HeadingCard
                     heading="Seznam předmětů"
                     leftActions={[headingBackAction(backReturnTo)]}
@@ -343,6 +437,16 @@ function StocktakingListContent() {
 
                 <UserLocationPicker onChange={handleLocationChange} />
 
+                <StateFilterChips
+                    value={pageState.filterState?.state ?? []}
+                    omitUnchecked={inventoryDisplayMode === INVENTORY_DISPLAY_MODE.WORKFLOW}
+                    onChange={(state) =>
+                        updatePageState({
+                            filterState: { ...pageState.filterState, state },
+                        })
+                    }
+                />
+
                 {error ? <div>Chyba: {error.message}</div> : null}
                 <div className="flex flex-col gap-2">
                     <StocktakingListItemViews
@@ -353,6 +457,7 @@ function StocktakingListContent() {
                         stocktakingId={stocktakingId}
                         pageSize={pageSize}
                         renderItemActions={renderItemActions}
+                        renderItemQuickActions={renderItemQuickActions}
                         onItemNavigate={(itemId) => persistScrollState({ anchorId: itemId })}
                         itemDetailReturnTo={listReturnTo}
                     />
@@ -370,14 +475,14 @@ function StocktakingListContent() {
                 />
                 <div
                     ref={bottomBarRef}
-                    className="fixed left-0 right-0 bottom-0 z-[100] flex justify-center backdrop-blur-md"
+                    className="fixed left-0 right-0 z-[100] flex justify-center backdrop-blur-md"
                     style={{
+                        bottom: "var(--bottom-nav-h, 0px)",
                         background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.25) 20%, rgba(0,0,0,0.25) 100%)',
                     }}
                 >
                     <div className="container flex items-center gap-2 p-4">
-                        {/* Search input */}
-                        <div className="flex flex-1 items-center gap-2 rounded-2xl bg-[#282828] p-3 text-white">
+                        <div className="flex flex-1 items-center gap-2 rounded-2xl bg-[var(--ink-soft)] p-3 text-white">
                             <span className="material-icons-round text-white" style={{ fontSize: "16px" }}>search</span>
                             <input
                                 type="text"
@@ -391,7 +496,7 @@ function StocktakingListContent() {
 
                         <button
                             type="button"
-                            className="flex items-center gap-2 rounded-2xl bg-[#282828] p-3 text-white border-none cursor-pointer"
+                            className="flex items-center gap-2 rounded-2xl bg-[var(--ink-soft)] p-3 text-white border-none cursor-pointer"
                             onClick={() => setIsAddItemModalOpen(true)}
                             aria-label="Přidat položku"
                         >
@@ -399,7 +504,7 @@ function StocktakingListContent() {
                         </button>
                         <button
                             type="button"
-                            className="flex items-center gap-2 rounded-2xl bg-[#282828] p-3 text-white border-none cursor-pointer"
+                            className="flex items-center gap-2 rounded-2xl bg-[var(--ink-soft)] p-3 text-white border-none cursor-pointer"
                             onClick={() => setIsQRModalOpen(true)}
                             aria-label="Skenovat QR"
                         >
@@ -458,7 +563,7 @@ function StocktakingListContent() {
                             Založit novou položku
                         </Button>
                         <Button
-                            icon="link"
+                            icon="search"
                             iconPosition="right"
                             onClick={() => {
                                 setIsAddItemModalOpen(false);
@@ -469,7 +574,7 @@ function StocktakingListContent() {
                                 );
                             }}
                         >
-                            Propojit existující
+                            Najít v majetku
                         </Button>
                         <Button
                             variant="secondary"
@@ -484,19 +589,19 @@ function StocktakingListContent() {
 
                 <CenteredModal isOpen={isNotInInventoryModalOpen} onClose={() => setIsNotInInventoryModalOpen(false)} title="QR Sken">
                     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                        <div style={{ color: "#FF6262", fontWeight: 600 }}>
+                        <div style={{ color: "var(--danger)", fontWeight: 600 }}>
                             Položka není součástí inventurního seznamu.
                         </div>
                         {isLookingUpOutsideInventura && (
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "0.5rem 0" }}>
                                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                                <div style={{ fontSize: 13, color: "#535353" }}>Vyhledávám položku podle QR...</div>
+                                <div style={{ fontSize: 13, color: "var(--muted)" }}>Vyhledávám položku podle QR...</div>
                             </div>
                         )}
                         {!isLookingUpOutsideInventura && outsideInventuraItem && (
                             <div style={{
                                 borderRadius: 16,
-                                background: "#f0f1f3",
+                                background: "var(--surface-2)",
                                 overflow: "hidden",
                                 display: "flex",
                                 flexDirection: "column",
@@ -517,9 +622,9 @@ function StocktakingListContent() {
                                 />
                                 <div className="p-4 gap-2 flex flex-col">
                                     <CardItemName>{outsideInventuraItem.name}</CardItemName>
-                                    <div style={{ fontSize: 12, color: "#535353" }}>{outsideInventuraItem.note}</div>
+                                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{outsideInventuraItem.note}</div>
                                     {outsideInventuraItem.qr && (
-                                        <div style={{ fontSize: 12, color: "#535353", fontStyle: "italic" }}>
+                                        <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>
                                             QR kód: {outsideInventuraItem.qr}
                                         </div>
                                     )}
@@ -528,7 +633,7 @@ function StocktakingListContent() {
                         )}
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", width: "100%" }}>
                             {!isLookingUpOutsideInventura && outsideInventuraItem && !getEffectiveInvNumber(outsideInventuraItem) && (
-                                <div style={{ fontSize: 12, color: "#FF6262" }}>
+                                <div style={{ fontSize: 12, color: "var(--danger)" }}>
                                     Položka nemá inventární číslo — nelze ji přidat do inventury.
                                 </div>
                             )}
@@ -567,10 +672,9 @@ function StocktakingListContent() {
                 >
                     {apiLoading ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                            {/* Skeleton for image */}
                             <div style={{
                                 borderRadius: 16,
-                                background: "#f0f1f3",
+                                background: "var(--surface-2)",
                                 overflow: "hidden",
                                 display: "flex",
                                 flexDirection: "column",
@@ -579,50 +683,47 @@ function StocktakingListContent() {
                                 <div style={{ 
                                     width: "100%", 
                                     height: 150, 
-                                    background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                                    background: "linear-gradient(90deg, var(--skeleton) 25%, var(--line) 50%, var(--skeleton) 75%)",
                                     backgroundSize: "200% 100%",
                                     animation: "loading 1.5s infinite"
                                 }} />
                                 <div className="p-4 gap-4 flex flex-col">
-                                    {/* Skeleton for name */}
                                     <div style={{ 
                                         height: 24, 
                                         width: "70%", 
-                                        background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                                        background: "linear-gradient(90deg, var(--skeleton) 25%, var(--line) 50%, var(--skeleton) 75%)",
                                         backgroundSize: "200% 100%",
                                         animation: "loading 1.5s infinite",
                                         borderRadius: 4
                                     }} />
-                                    {/* Skeleton for note */}
                                     <div style={{ 
                                         height: 16, 
                                         width: "90%", 
-                                        background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                                        background: "linear-gradient(90deg, var(--skeleton) 25%, var(--line) 50%, var(--skeleton) 75%)",
                                         backgroundSize: "200% 100%",
                                         animation: "loading 1.5s infinite",
                                         borderRadius: 4
                                     }} />
                                 </div>
                             </div>
-                            {/* Skeleton for buttons */}
                             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", width: "100%" }}>
                                 <div style={{ 
                                     height: 48, 
-                                    background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                                    background: "linear-gradient(90deg, var(--skeleton) 25%, var(--line) 50%, var(--skeleton) 75%)",
                                     backgroundSize: "200% 100%",
                                     animation: "loading 1.5s infinite",
                                     borderRadius: 8
                                 }} />
                                 <div style={{ 
                                     height: 48, 
-                                    background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                                    background: "linear-gradient(90deg, var(--skeleton) 25%, var(--line) 50%, var(--skeleton) 75%)",
                                     backgroundSize: "200% 100%",
                                     animation: "loading 1.5s infinite",
                                     borderRadius: 8
                                 }} />
                                 <div style={{ 
                                     height: 48, 
-                                    background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                                    background: "linear-gradient(90deg, var(--skeleton) 25%, var(--line) 50%, var(--skeleton) 75%)",
                                     backgroundSize: "200% 100%",
                                     animation: "loading 1.5s infinite",
                                     borderRadius: 8
@@ -633,13 +734,12 @@ function StocktakingListContent() {
                         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                             <div style={{
                                 borderRadius: 16,
-                                background: "#f0f1f3",
+                                background: "var(--surface-2)",
                                 overflow: "hidden",
                                 display: "flex",
                                 flexDirection: "column",
                                 width: "100%"
                             }}>
-                                {/* Top: Image */}
                                 <img
                                     src={
                                         scannedItem.image
@@ -653,13 +753,12 @@ function StocktakingListContent() {
                                     alt={scannedItem.name}
                                     style={{ width: "100%", height: 150, objectFit: "cover", display: "block" }}
                                 />
-                                {/* Bottom: Content */}
                                 <div className="p-4 gap-4 flex flex-col">
                                     <div>
                                         <CardItemName>{scannedItem.name}</CardItemName>
-                                        <div style={{ fontSize: 12, color: "#535353" }}>{scannedItem.note}</div>
+                                        <div style={{ fontSize: 12, color: "var(--muted)" }}>{scannedItem.note}</div>
                                     </div>
-                                    <div style={{ fontStyle: "italic", fontSize: 12, color: "#535353" }}>
+                                    <div style={{ fontStyle: "italic", fontSize: 12, color: "var(--muted)" }}>
                                         {scannedItem.qr && (<span>QR kód: {scannedItem.qr}</span>)}
                                     </div>
                                 </div>
@@ -688,7 +787,7 @@ function StocktakingListContent() {
                                 </Button>
                                 )}
                                 {isNewState(scannedItem.state) && (
-                                <div style={{ fontSize: 12, color: "#535353", fontStyle: "italic" }}>
+                                <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>
                                     Položka ve stavu Nový — stav se nemění.
                                 </div>
                                 )}
@@ -713,11 +812,10 @@ function StocktakingListContent() {
                 <CenteredModal isOpen={isMoveModalOpen} onClose={() => setIsMoveModalOpen(false)} title="Přesun položky" disableClickAway={isLocationPickerOpen}>
                   {moveItem && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                      <div style={{ color: "#0074D9", fontWeight: 600 }}>
+                      <div style={{ color: "var(--info)", fontWeight: 600 }}>
                         Položka bude přesunuta do jiné místnosti
                       </div>
-                      <div style={{ borderRadius: 16, background: "#f0f1f3", overflow: "hidden", display: "flex", flexDirection: "column", width: "100%" }}>
-                        {/* Top: Image */}
+                      <div style={{ borderRadius: 16, background: "var(--surface-2)", overflow: "hidden", display: "flex", flexDirection: "column", width: "100%" }}>
                         {moveItem.image && (
                           <img
                             src={
@@ -731,20 +829,19 @@ function StocktakingListContent() {
                             style={{ width: "100%", height: 150, objectFit: "cover", display: "block" }}
                           />
                         )}
-                        {/* Bottom: Content */}
                         <div className="p-4 gap-4 flex flex-col">
                           <div>
                             <CardItemName>{moveItem.name}</CardItemName>
-                            <div style={{ fontSize: 12, color: "#535353" }}>{moveItem.note}</div>
+                            <div style={{ fontSize: 12, color: "var(--muted)" }}>{moveItem.note}</div>
                           </div>
-                          <div style={{ fontStyle: "italic", fontSize: 12, color: "#535353" }}>
+                          <div style={{ fontStyle: "italic", fontSize: 12, color: "var(--muted)" }}>
                             Poslední kontrola {moveItem.lastCheck ? new Date(moveItem.lastCheck).toLocaleString() : ""}
                           </div>
                         </div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, width: "100%" }}>
                         <LocationPicker value={moveItem.location} label="Aktuální umístění:" editMode={false} />
-                        <span className="material-icons-round" style={{ fontSize: 24, color: "#000" }}>arrow_downward</span>
+                        <span className="material-icons-round" style={{ fontSize: 24, color: 'var(--fg)' }}>arrow_downward</span>
                         <LocationPicker 
                           value={moveNewLocation} 
                           label="Nové umístění:" 
@@ -794,6 +891,16 @@ function StocktakingListContent() {
                 />
 
                 <ActionLoadingModal isOpen={isUpdatingItem || isAddingOutsideItem} />
+
+                <UndoToast
+                    toast={stateToast}
+                    bottomOffset={bottomPadding}
+                    onUndo={undoQuickSetState}
+                    onClose={() => {
+                        clearStateToastTimer();
+                        setStateToast(null);
+                    }}
+                />
             </div>
         </main>
     );

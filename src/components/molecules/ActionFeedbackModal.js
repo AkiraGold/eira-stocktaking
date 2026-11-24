@@ -19,12 +19,12 @@ export default function ActionFeedbackModal({
       onClose={onClose}
       title={title}
       autoDismissMs={success ? autoCloseMs : null}
-      autoDismissProgressColor={success ? "#2ecc40" : undefined}
+      autoDismissProgressColor={success ? "var(--ok)" : undefined}
       autoDismissEdge="bottom"
     >
       <div
         style={{
-          color: success ? "#2ecc40" : "#FF6262",
+          color: success ? "var(--ok)" : "var(--danger)",
           fontWeight: 600,
           fontSize: 16,
         }}

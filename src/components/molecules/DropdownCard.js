@@ -23,7 +23,7 @@ export default function DropdownCard({ label, options = [], onSelect, selected, 
                     fontSize: "0.75rem",
                     transition: "background 0.15s",
                     borderRadius: "0.5rem",
-                    color: "#000",
+                    color: 'var(--fg)',
                     opacity: disabled ? 0.5 : 1,
                     cursor: disabled ? "not-allowed" : "pointer"
                 }}
@@ -34,7 +34,7 @@ export default function DropdownCard({ label, options = [], onSelect, selected, 
             >
                 <span>{selected ? selected.text : label}</span>
                 <span className="material-icons-round"
-                    style={{ fontSize: "20px", color: "#000", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : undefined }}
+                    style={{ fontSize: "20px", color: 'var(--fg)', transition: "transform 0.2s", transform: open ? "rotate(180deg)" : undefined }}
                 >
                     expand_more
                 </span>
@@ -44,15 +44,15 @@ export default function DropdownCard({ label, options = [], onSelect, selected, 
                     {options.map((option, idx) => (
                         <li key={option.value}>
                             <button
-                                className="w-full text-left hover:bg-gray-100 transition-colors"
-                                style={{ fontWeight: 500, fontSize: "0.75rem", color: "#000", border: "none", background: "none", padding: "0.75rem" }}
+                                className="w-full text-left hover:bg-[var(--surface-2)] transition-colors"
+                                style={{ fontWeight: 500, fontSize: "0.75rem", color: 'var(--fg)', border: "none", background: "none", padding: "0.75rem" }}
                                 onClick={() => { setOpen(false); onSelect && onSelect(option); }}
                                 type="button"
                             >
                                 {option.text}
                             </button>
                             {idx !== options.length - 1 && (
-                                <div style={{ borderBottom: "1px solid #F0F0F0", marginLeft: 0, marginRight: 0 }} />
+                                <div style={{ borderBottom: "1px solid var(--skeleton)", marginLeft: 0, marginRight: 0 }} />
                             )}
                         </li>
                     ))}

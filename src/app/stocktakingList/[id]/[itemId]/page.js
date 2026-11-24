@@ -17,6 +17,7 @@ import CardItemName from "@/components/atoms/CardItemName";
 import { INVENTORY_STATES, resolveStateForMove, resolveStateForUpdate } from "@/utils/inventoryStates";
 import { buildStocktakingItemUrl, buildStocktakingListUrl, HOME_PATH } from "@/utils/inventoryNavigation";
 import PageLoadingScreen from "@/components/atoms/PageLoadingScreen";
+import UndoToast from "@/components/molecules/UndoToast";
 
 
 export default function StocktakingListItemDetail() {
@@ -50,8 +51,17 @@ export default function StocktakingListItemDetail() {
 
     const [actionModalOpen, setActionModalOpen] = useState(false);
     const [actionModalContent, setActionModalContent] = useState({ title: '', message: '', success: false });
+    const [toast, setToast] = useState(null);
+    const toastTimerRef = useRef(null);
+    const [noteSaving, setNoteSaving] = useState(false);
 
-    // Store the original image for comparison
+    const showToast = (next) => {
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        setToast(next);
+        toastTimerRef.current = setTimeout(() => setToast(null), next?.undoable ? 6000 : 2500);
+    };
+    useEffect(() => () => toastTimerRef.current && clearTimeout(toastTimerRef.current), []);
+
     const originalImageRef = useRef(null);
     useEffect(() => {
         if (fetchedItem) {
@@ -59,7 +69,6 @@ export default function StocktakingListItemDetail() {
         }
     }, [fetchedItem]);
 
-    // Map API location fields to Czech field names and set item state
     useEffect(() => {
         if (fetchedItem) {
             const mappedLoc = fetchedItem.location
@@ -99,52 +108,85 @@ export default function StocktakingListItemDetail() {
         }
     }, [editMode, barRendered]);
 
-    // Show loading modal when any action is in progress
     const isAnyLoading = updateLoading || deleteLoading || duplicateLoading;
 
-    // Helper to show modal
     const showActionModal = (title, message, success) => {
         setActionModalContent({ title, message, success });
         setActionModalOpen(true);
     };
 
-    if (loading) return <PageLoadingScreen />;
-    if (error) return <PageLoadingScreen message={`Chyba: ${error.message}`} />;
+    // Opětovné načtení po uložení nemá překrýt obrazovku načítáním.
+    if (loading && !fetchedItem) return <PageLoadingScreen />;
+    if (error && !fetchedItem) return <PageLoadingScreen message={`Chyba: ${error.message}`} />;
     if (!fetchedItem) return <PageLoadingScreen message="Položka nenalezena" />;
 
     const item = { ...fetchedItem, location: editItem?.location };
 
-    const handleMarkFound = async () => {
+    /** Změna stavu z přepínače: uloží se hned a krátce nabídne Vrátit zpět. */
+    const changeState = async (target, message, errorMessage) => {
         if (!item) return;
+        const prev = { state: item.state, location: item.location };
         const { image, ...rest } = item;
-        const result = await updateItem({ ...rest, stocktakingId, state: resolveStateForUpdate(INVENTORY_STATES.FOUND, item.state) });
+        const result = await updateItem({ ...rest, stocktakingId, state: resolveStateForUpdate(target, item.state) });
         if (result) {
-            showActionModal('Hotovo', 'Položka byla označena jako nalezena.', true);
+            showToast({ message, undoable: true, prev });
             if (refetchItem) refetchItem();
         } else {
-            showActionModal('Chyba', 'Nepodařilo se označit položku jako nalezenou.', false);
+            showActionModal('Chyba', errorMessage, false);
         }
     };
 
-    const handleMarkNotFound = async () => {
-        if (!item) return;
+    const handleMarkFound = () =>
+        changeState(INVENTORY_STATES.FOUND, 'Označeno jako nalezeno', 'Nepodařilo se označit položku jako nalezenou.');
+
+    const handleMarkNotFound = () =>
+        changeState(INVENTORY_STATES.NOT_FOUND, 'Označeno jako nenalezeno', 'Nepodařilo se označit položku jako nenalezenou.');
+
+    const handleUndo = async () => {
+        const prev = toast?.prev;
+        if (!prev || !item) return;
+        setToast((t) => (t ? { ...t, undoing: true } : t));
         const { image, ...rest } = item;
-        const result = await updateItem({ ...rest, stocktakingId, state: resolveStateForUpdate(INVENTORY_STATES.NOT_FOUND, item.state) });
+        const result = await updateItem({
+            ...rest,
+            stocktakingId,
+            state: prev.state,
+            location: prev.location ? mapLocationToApi(prev.location) : rest.location,
+        });
         if (result) {
-            showActionModal('Hotovo', 'Položka byla označena jako nenalezena.', true);
+            showToast({ message: 'Změna vrácena' });
             if (refetchItem) refetchItem();
         } else {
-            showActionModal('Chyba', 'Nepodařilo se označit položku jako nenalezenou.', false);
+            setToast(null);
+            showActionModal('Chyba', 'Změnu se nepodařilo vrátit.', false);
+        }
+    };
+
+    const handleSaveNote = async (note) => {
+        if (!item) return;
+        setNoteSaving(true);
+        try {
+            const { image, ...rest } = item;
+            const result = await updateItem({ ...rest, stocktakingId, note, state: resolveStateForUpdate(item.state, item.state) });
+            if (result) {
+                showToast({ message: 'Poznámka uložena' });
+                if (refetchItem) refetchItem();
+            } else {
+                showActionModal('Chyba', 'Poznámku se nepodařilo uložit.', false);
+            }
+        } finally {
+            setNoteSaving(false);
         }
     };
 
     const handleMoveConfirm = async () => {
         if (!item || !moveNewLocation) return;
         const { image, ...rest } = item;
+        const prev = { state: item.state, location: item.location };
         const result = await updateItem({ ...rest, stocktakingId, location: mapLocationToApi(moveNewLocation), state: resolveStateForMove(item.state) });
         setIsMoveModalOpen(false);
         if(result) {
-            showActionModal('Hotovo', 'Položka byla přesunuta.', true);
+            showToast({ message: 'Předmět přesunut', undoable: true, prev });
             if (refetchItem) refetchItem();
         } else {
             showActionModal('Chyba', 'Nepodařilo se přesunout položku.', false);
@@ -156,7 +198,6 @@ export default function StocktakingListItemDetail() {
         setIsMoveModalOpen(true);
     };
 
-    // Save handler
     const handleSave = async () => {
         if (!editItem) return;
 
@@ -211,7 +252,6 @@ export default function StocktakingListItemDetail() {
         }
     };
 
-    // Delete handler
     const handleDelete = async () => {
         if (!editItem) return;
         const result = await deleteItem(editItem.id);
@@ -238,8 +278,10 @@ export default function StocktakingListItemDetail() {
                 onMarkNotFound={handleMarkNotFound}
                 showMove={true}
                 showFoundActions={true}
-                loading={loading}
-                error={error}
+                loading={loading && !fetchedItem}
+                error={fetchedItem ? null : error}
+                onSaveNote={handleSaveNote}
+                noteSaving={noteSaving}
                 returnTo={returnTo}
                 isDeleteModalOpen={isDeleteModalOpen}
                 setIsDeleteModalOpen={setIsDeleteModalOpen}
@@ -249,7 +291,6 @@ export default function StocktakingListItemDetail() {
                 setBarRendered={setBarRendered}
                 attachmentsRef={attachmentsRef}
             />
-            {/* Action result modal for update, delete, duplicate */}
             <ActionFeedbackModal
                 isOpen={actionModalOpen}
                 onClose={() => setActionModalOpen(false)}
@@ -257,8 +298,8 @@ export default function StocktakingListItemDetail() {
                 message={actionModalContent.message}
                 success={actionModalContent.success}
             />
-            {/* Loading modal for any action */}
-            <ActionLoadingModal isOpen={isAnyLoading} />
+            <ActionLoadingModal isOpen={isAnyLoading && !noteSaving} />
+            <UndoToast toast={toast} onUndo={handleUndo} onClose={() => setToast(null)} />
             <DuplicateIdentifierModal
                 isOpen={duplicateModal.isOpen}
                 onClose={duplicateModal.close}
@@ -266,7 +307,6 @@ export default function StocktakingListItemDetail() {
                 onConfirm={handleDuplicateConfirm}
                 loading={duplicateLoading}
             />
-            {/* Delete Confirmation Modal */}
             <CenteredModal title={"Opravdu chcete smazat předmět?"} isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div style={{ fontSize: 12, fontStyle: 'italic' }}>Tuto operaci nelze vrátit!</div>
@@ -279,10 +319,10 @@ export default function StocktakingListItemDetail() {
             <CenteredModal isOpen={isMoveModalOpen} onClose={() => setIsMoveModalOpen(false)} title="Přesun položky" disableClickAway={isLocationPickerOpen}>
                 {item && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                        <div style={{ color: "#0074D9", fontWeight: 600 }}>
+                        <div style={{ color: "var(--info)", fontWeight: 600 }}>
                             Položka bude přesunuta do jiné místnosti
                         </div>
-                        <div style={{ borderRadius: 16, background: "#f0f1f3", overflow: "hidden", display: "flex", flexDirection: "column", width: "100%" }}>
+                        <div style={{ borderRadius: 16, background: "var(--surface-2)", overflow: "hidden", display: "flex", flexDirection: "column", width: "100%" }}>
                             {item.image && (
                                 <img
                                     src={
@@ -299,16 +339,16 @@ export default function StocktakingListItemDetail() {
                             <div className="p-4 gap-4 flex flex-col">
                                 <div>
                                     <CardItemName>{item.name}</CardItemName>
-                                    <div style={{ fontSize: 12, color: "#535353" }}>{item.note}</div>
+                                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{item.note}</div>
                                 </div>
-                                <div style={{ fontStyle: "italic", fontSize: 12, color: "#535353" }}>
+                                <div style={{ fontStyle: "italic", fontSize: 12, color: "var(--muted)" }}>
                                     Poslední kontrola {item.lastCheck ? new Date(item.lastCheck).toLocaleString() : ""}
                                 </div>
                             </div>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, width: "100%" }}>
                             <LocationPicker value={item.location} label="Aktuální umístění:" editMode={false} />
-                            <span className="material-icons-round" style={{ fontSize: 24, color: "#000" }}>arrow_downward</span>
+                            <span className="material-icons-round" style={{ fontSize: 24, color: 'var(--fg)' }}>arrow_downward</span>
                             <LocationPicker 
                               value={moveNewLocation} 
                               label="Nové umístění:" 

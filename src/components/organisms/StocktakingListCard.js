@@ -16,7 +16,7 @@ export default function StocktakingListCard({ operation, href, onClick }) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <CardItemName>{operation.name || `Inventura #${operation.id}`}</CardItemName>
-            <span className="material-icons-round" style={{ fontSize: 18, color: '#000' }}>arrow_forward_ios</span>
+            <span className="material-icons-round" style={{ fontSize: 18, color: 'var(--fg)' }}>arrow_forward_ios</span>
           </div>
           <CardItemDescription>{operation.note}</CardItemDescription>
         </div>

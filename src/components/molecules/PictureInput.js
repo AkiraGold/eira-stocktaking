@@ -12,7 +12,7 @@ function PictureInputButton({ onClick, title, children, style = {}, disabled = f
             style={{
                 borderRadius: "1rem",
                 padding: "0.75rem",
-                background: "#000",
+                background: 'var(--fg)',
                 border: "none",
                 display: "flex",
                 alignItems: "center",
@@ -55,11 +55,9 @@ export default function PictureInput({ label, onChange, value, editMode = false,
         if (!value) {
             setPreview(null);
         } else if (typeof value === "string") {
-            // If value looks like a base64 string (not a URL or file path)
             if (/^data:image\//.test(value)) {
                 setPreview(value);
             } else if (/^[A-Za-z0-9+/=]+$/.test(value) && value.length > 100) {
-                // crude check for base64 string
                 setPreview(`data:image/*;base64,${value}`);
             } else {
                 setPreview(value);
@@ -169,7 +167,7 @@ export default function PictureInput({ label, onChange, value, editMode = false,
                             borderRadius: 12,
                             fontSize: 14,
                             fontWeight: 600,
-                            color: "#333",
+                            color: "var(--fg)",
                             zIndex: 3
                         }}
                     >
@@ -184,7 +182,7 @@ export default function PictureInput({ label, onChange, value, editMode = false,
                                 style={{
                                     position: "absolute",
                                     inset: 0,
-                                    background: "linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%)",
+                                    background: "linear-gradient(90deg, var(--skeleton) 25%, var(--skeleton-hi) 50%, var(--skeleton) 75%)",
                                     backgroundSize: "200% 100%",
                                     borderRadius: 12
                                 }}
@@ -213,16 +211,15 @@ export default function PictureInput({ label, onChange, value, editMode = false,
                             style={{
                                 position: "absolute",
                                 inset: 0,
-                                background: "linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%)",
+                                background: "linear-gradient(90deg, var(--skeleton) 25%, var(--skeleton-hi) 50%, var(--skeleton) 75%)",
                                 backgroundSize: "200% 100%",
                                 borderRadius: 12
                             }}
                         />
                     ) : (
-                        <span style={{ color: "#000", opacity: "50%", fontSize: 32 }} className="material-icons-round">image_not_supported</span>
+                        <span style={{ color: 'var(--fg)', opacity: "50%", fontSize: 32 }} className="material-icons-round">image_not_supported</span>
                     )
                 )}
-                {/* Absolute top right: pick photo, fit switch, trash */}
                 <div style={{
                     position: "absolute",
                     top: "1rem",
@@ -236,7 +233,7 @@ export default function PictureInput({ label, onChange, value, editMode = false,
                         onClick={toggleObjectFit}
                         title={objectFit === "cover" ? "Přepnout na obsah (contain)" : "Přepnout na oříznutí (cover)"}
                     >
-                        <span className="material-icons-round" style={{ color: "#fff", fontSize: 14 }}>{objectFit === "cover" ? "fit_screen" : "crop"}</span>
+                        <span className="material-icons-round" style={{ color: 'var(--accent-ink)', fontSize: 14 }}>{objectFit === "cover" ? "fit_screen" : "crop"}</span>
                     </PictureInputButton>
                     {editMode && (
                         <>
@@ -245,10 +242,10 @@ export default function PictureInput({ label, onChange, value, editMode = false,
                                 disabled={processing}
                                 title="Vybrat fotku (galerie nebo fotoaparát)"
                             >
-                                <span className="material-icons-round" style={{ color: "#fff", fontSize: 14 }}>photo_library</span>
+                                <span className="material-icons-round" style={{ color: 'var(--accent-ink)', fontSize: 14 }}>photo_library</span>
                             </PictureInputButton>
                             <PictureInputButton onClick={handleDelete}>
-                                <span className="material-icons-round" style={{ color: "#FF6262", fontSize: 14 }}>delete</span>
+                                <span className="material-icons-round" style={{ color: "var(--danger)", fontSize: 14 }}>delete</span>
                             </PictureInputButton>
                         </>
                     )}
@@ -268,7 +265,7 @@ export default function PictureInput({ label, onChange, value, editMode = false,
                     style={{
                         fontSize: 15,
                         lineHeight: 1.55,
-                        color: "#333",
+                        color: "var(--fg)",
                         whiteSpace: "pre-line",
                     }}
                 >

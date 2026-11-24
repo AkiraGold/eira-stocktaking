@@ -83,7 +83,6 @@ export default function LocationPickerModal({ isOpen, onClose, onSave, initialLo
         setSelectedStorey(null);
         setSelectedRoom(null);
         
-        // If "-bez výběru-" is selected, clear all below
         if (val.value === null) {
             setSelectedStorey(null);
             setSelectedRoom(null);
@@ -94,7 +93,6 @@ export default function LocationPickerModal({ isOpen, onClose, onSave, initialLo
         setSelectedStorey(val.value);
         setSelectedRoom(null);
         
-        // If "-bez výběru-" is selected, clear all below
         if (val.value === null) {
             setSelectedRoom(null);
         }
@@ -135,8 +133,8 @@ export default function LocationPickerModal({ isOpen, onClose, onSave, initialLo
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "space-between",
-                                background: "#282828",
-                                color: "#fff",
+                                background: "var(--ink-soft)",
+                                color: "var(--on-ink)",
                                 border: "none",
                                 borderRadius: "1rem",
                                 padding: "0.75rem",
@@ -174,8 +172,8 @@ export default function LocationPickerModal({ isOpen, onClose, onSave, initialLo
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "space-between",
-                                background: "#282828",
-                                color: "#fff",
+                                background: "var(--ink-soft)",
+                                color: "var(--on-ink)",
                                 border: "none",
                                 borderRadius: "1rem",
                                 padding: "0.75rem",
@@ -198,8 +196,8 @@ export default function LocationPickerModal({ isOpen, onClose, onSave, initialLo
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "space-between",
-                                background: "#F0F1F3",
-                                color: "#535353",
+                                background: "var(--surface-2)",
+                                color: "var(--muted)",
                                 border: "none",
                                 borderRadius: "1rem",
                                 padding: "0.75rem",

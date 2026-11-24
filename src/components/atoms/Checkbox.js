@@ -29,7 +29,7 @@ export default function Checkbox({
                 checked={checked}
                 onChange={() => onChange(value)}
                 name={name}
-                style={{ width: 16, height: 16, accentColor: '#282828', marginLeft: 8, ...checkboxStyle }}
+                style={{ width: 16, height: 16, accentColor: 'var(--ink-soft)', marginLeft: 8, ...checkboxStyle }}
                 onClick={onClick}
             />
         </label>

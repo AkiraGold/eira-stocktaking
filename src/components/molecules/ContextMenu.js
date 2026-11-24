@@ -27,7 +27,7 @@ const styles = {
   },
   panel: {
     position: 'fixed',
-    backgroundColor: '#282828',
+    backgroundColor: 'var(--ink-soft)',
     borderRadius: 16,
     display: 'flex',
     flexDirection: 'column',
@@ -60,7 +60,7 @@ function placeMenu(anchor, menu) {
   return { top, left };
 }
 
-export function ContextRow({ icon, label, action, color = '#fff', closeMenu, rowPadding: padding }) {
+export function ContextRow({ icon, label, action, color = 'var(--on-ink)', closeMenu, rowPadding: padding }) {
   const handleClick = async (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -150,7 +150,7 @@ export function ContextButton({ children }) {
           setOpen((v) => !v);
         }}
       >
-        <span className="material-icons-round text-black text-xl">more_horiz</span>
+        <span className="material-icons-round text-xl" style={{ color: 'var(--fg)' }}>more_horiz</span>
       </button>
       {typeof window !== 'undefined' && menu && createPortal(menu, document.body)}
     </span>

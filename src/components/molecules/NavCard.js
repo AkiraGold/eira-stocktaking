@@ -7,11 +7,9 @@ export function NavButton({
     variant = "light", // "light" or "dark"
     onClick
 }) {
-    // Color logic
     const isDark = variant === "dark";
-    const bgColor = isDark ? "#282828" : "#f0f1f3";
-    const textColor = isDark ? "#fff" : "#000";
-    // Big variant
+    const bgColor = isDark ? "var(--ink-soft)" : "var(--surface-2)";
+    const textColor = isDark ? "var(--on-ink)" : "var(--fg)";
     if (size === "big") {
         return (
             <button
@@ -29,13 +27,11 @@ export function NavButton({
                     flex: "1"
                 }}
             >
-                {/* Icon row */}
                 {icon && (
                     <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", minHeight: 32 }}>
                         <span className="material-icons-round" style={{ fontSize: 32, color: textColor }}>{icon}</span>
                     </div>
                 )}
-                {/* Text + Arrow row */}
                 <div
                     style={{
                         display: "flex",
@@ -51,7 +47,6 @@ export function NavButton({
             </button>
         );
     }
-    // Small variant
     return (
         <button
             onClick={onClick}
@@ -81,17 +76,14 @@ export function NavLink({
     disabled = false,
     onDisabledClick,
 }) {
-    // Color logic
     const isDark = variant === "dark";
-    const bgColor = isDark ? "#282828" : "#f0f1f3";
-    const textColor = isDark ? "#fff" : "#000";
+    const bgColor = isDark ? "var(--ink-soft)" : "var(--surface-2)";
+    const textColor = isDark ? "var(--on-ink)" : "var(--fg)";
     
-    // Disabled state styling
     if (disabled) {
-        const disabledBgColor = "#e0e0e0";
-        const disabledTextColor = "#999";
+        const disabledBgColor = "var(--line)";
+        const disabledTextColor = "var(--muted)";
         
-        // Big variant
         if (size === "big") {
             return (
                 <div
@@ -119,13 +111,11 @@ export function NavLink({
                         opacity: 0.6
                     }}
                 >
-                    {/* Icon row */}
                     {icon && (
                         <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", minHeight: 32 }}>
                             <span className="material-icons-round" style={{ fontSize: 32, color: disabledTextColor }}>{icon}</span>
                         </div>
                     )}
-                    {/* Text + Arrow row */}
                     <div
                         style={{
                             display: "flex",
@@ -141,7 +131,6 @@ export function NavLink({
                 </div>
             );
         }
-        // Small variant
         return (
             <div
                 role="button"
@@ -171,7 +160,6 @@ export function NavLink({
             </div>
         );
     }
-    // Big variant
     if (size === "big") {
         return (
             <Link
@@ -189,13 +177,11 @@ export function NavLink({
                     flex: "1"
                 }}
             >
-                {/* Icon row */}
                 {icon && (
                     <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", minHeight: 32 }}>
                         <span className="material-icons-round" style={{ fontSize: 32, color: textColor }}>{icon}</span>
                     </div>
                 )}
-                {/* Text + Arrow row */}
                 <div
                     style={{
                         display: "flex",
@@ -211,7 +197,6 @@ export function NavLink({
             </Link>
         );
     }
-    // Small variant
     return (
         <Link
             href={href}

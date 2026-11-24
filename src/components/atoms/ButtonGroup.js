@@ -18,7 +18,7 @@ export default function ButtonGroup({
         flexDirection: isVertical ? "column" : "row",
         borderRadius: "8px",
         overflow: "hidden",
-        border: isVertical ? "none" : "1px solid #e0e0e0",
+        border: isVertical ? "none" : "1px solid var(--line)",
         gap: isVertical ? "0.25rem" : "0",
         ...style 
       }}
@@ -36,10 +36,10 @@ export default function ButtonGroup({
             style={{
               flex: isVertical ? "none" : 1,
               padding: "0.75rem",
-              border: isVertical ? "1px solid #e0e0e0" : "none",
+              border: isVertical ? "1px solid var(--line)" : "none",
               borderRadius: isVertical ? "8px" : "0",
-              backgroundColor: isSelected ? "#282828" : "#fff",
-              color: isSelected ? "#fff" : "#333",
+              backgroundColor: isSelected ? "var(--accent)" : "var(--surface)",
+              color: isSelected ? "var(--accent-ink)" : "var(--fg)",
               cursor: "pointer",
               fontSize: "0.875rem",
               fontWeight: isSelected ? 600 : 400,
@@ -47,7 +47,7 @@ export default function ButtonGroup({
               alignItems: "center",
               justifyContent: iconPosition === "left" ? "flex-start" : "space-between",
               gap: "0.5rem",
-              borderRight: isVertical ? "1px solid #e0e0e0" : (isLast ? "none" : "1px solid #e0e0e0"),
+              borderRight: isVertical ? "1px solid var(--line)" : (isLast ? "none" : "1px solid var(--line)"),
               transition: "all 0.2s ease",
               minHeight: isVertical ? "44px" : "auto",
               width: isVertical ? "100%" : "auto",
@@ -61,12 +61,12 @@ export default function ButtonGroup({
             }}
             onMouseEnter={(e) => {
               if (!isSelected) {
-                e.target.style.backgroundColor = "#f5f5f5";
+                e.target.style.backgroundColor = "var(--surface-2)";
               }
             }}
             onMouseLeave={(e) => {
               if (!isSelected) {
-                e.target.style.backgroundColor = "#fff";
+                e.target.style.backgroundColor = "var(--surface)";
               }
             }}
           >

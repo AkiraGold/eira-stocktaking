@@ -17,7 +17,7 @@ export default function LinkItemPage() {
   if (!stocktakingId) {
     return (
       <main className="relative min-h-screen flex flex-col items-center p-4">
-        <p style={{ color: "#FF6262", fontWeight: 600 }}>
+        <p style={{ color: "var(--danger)", fontWeight: 600 }}>
           Nejdřív vyberte inventuru v seznamu inventur.
         </p>
       </main>

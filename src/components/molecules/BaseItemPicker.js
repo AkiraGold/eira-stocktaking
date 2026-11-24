@@ -11,7 +11,6 @@ import LocationPicker from '@/components/organisms/LocationPicker';
 
 const PAGE_SIZE = 20;
 
-// Helper function to get location name from location object
 function useLocationName(location) {
   const { buildings } = useBuildings();
   const { storeys } = useStoreys(location?.building);
@@ -31,34 +30,33 @@ function useLocationName(location) {
   return parts.length > 0 ? parts.join(' / ') : null;
 }
 
-// Custom base item card component
 function BaseItemCard({ item, isSelected, onClick }) {
   const locationName = useLocationName(item.location);
 
   return (
     <div
       style={{
-        background: isSelected ? "#f0f0f0" : "#fff",
+        background: isSelected ? "var(--skeleton)" : "var(--surface)",
         borderRadius: "16px",
         padding: "1rem",
         cursor: "pointer",
         transition: "all 0.2s",
-        border: isSelected ? "2px solid #282828" : "1px solid #e0e0e0",
+        border: isSelected ? "2px solid var(--ink-soft)" : "1px solid var(--line)",
         boxShadow: isSelected ? "0 2px 8px rgba(0,0,0,0.1)" : "0 1px 3px rgba(0,0,0,0.05)"
       }}
       onClick={onClick}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <div style={{ fontWeight: 600, fontSize: "1rem", color: "#000" }}>
+        <div style={{ fontWeight: 600, fontSize: "1rem", color: 'var(--fg)' }}>
           {item.name}
         </div>
         {item.description && (
-          <div style={{ fontSize: "0.875rem", color: "#666" }}>
+          <div style={{ fontSize: "0.875rem", color: "var(--muted)" }}>
             {item.description}
           </div>
         )}
         {locationName && (
-          <div style={{ fontSize: "0.75rem", color: "#888", fontStyle: "italic" }}>
+          <div style={{ fontSize: "0.75rem", color: "var(--muted)", fontStyle: "italic" }}>
             Místnost: {locationName}
           </div>
         )}
@@ -92,7 +90,6 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
         return Number.isFinite(n) && n > 0 ? n : null;
     }, [selectedInventura?.id]);
 
-    // Load location from storage on mount and when getLocation changes
     useEffect(() => {
         const stored = getLocation();
         if (stored) {
@@ -237,7 +234,7 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
     if (!selectedInventura) {
         return (
             <CenteredModal isOpen={isOpen} onClose={handleClose} title="Vybrat základní položku">
-                <div style={{ color: '#FF6262', fontWeight: 600, padding: '1rem' }}>
+                <div style={{ color: 'var(--danger)', fontWeight: 600, padding: '1rem' }}>
                     Nejprve vyberte inventuru na hlavní stránce.
                 </div>
             </CenteredModal>
@@ -255,9 +252,7 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
                 minHeight: "400px",
                 position: "relative"
             }}>
-                {/* Fixed Header - Search and Filters */}
                 <div style={{ flexShrink: 0 }}>
-                    {/* Search */}
                     <div style={{ marginBottom: "0.75rem" }}>
                         <TextInput
                             placeholder="Hledat položky..."
@@ -265,7 +260,7 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             style={{ 
                                 width: "100%",
-                                border: "1px solid #e0e0e0",
+                                border: "1px solid var(--line)",
                                 borderRadius: "8px",
                                 padding: "0.75rem",
                                 fontSize: "0.875rem"
@@ -273,9 +268,7 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
                         />
                     </div>
 
-                    {/* Filters - Compact */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                        {/* Location Filter */}
                         <LocationPicker
                             value={filterLocation}
                             onChange={setFilterLocation}
@@ -285,9 +278,8 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
                             onModalClose={() => setIsLocationPickerOpen(false)}
                         />
 
-                        {/* Sort Options - Compact mobile design */}
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                            <div style={{ fontSize: "12px", color: "#666", fontWeight: 500, minWidth: "60px" }}>
+                            <div style={{ fontSize: "12px", color: "var(--muted)", fontWeight: 500, minWidth: "60px" }}>
                                 Seřadit:
                             </div>
                             <div style={{ flex: 1, display: "flex", gap: "0.25rem" }}>
@@ -297,10 +289,10 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
                                     style={{
                                         flex: 1,
                                         padding: "0.5rem",
-                                        border: "1px solid #e0e0e0",
+                                        border: "1px solid var(--line)",
                                         borderRadius: "6px",
                                         fontSize: "0.875rem",
-                                        backgroundColor: "white"
+                                        backgroundColor: 'var(--surface)'
                                     }}
                                 >
                                     <option value="id">ID</option>
@@ -311,9 +303,9 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
                                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                                     style={{
                                         padding: "0.5rem",
-                                        border: "1px solid #e0e0e0",
+                                        border: "1px solid var(--line)",
                                         borderRadius: "6px",
-                                        backgroundColor: "white",
+                                        backgroundColor: 'var(--surface)',
                                         cursor: "pointer",
                                         display: "flex",
                                         alignItems: "center",
@@ -332,7 +324,6 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
                 </div>
 
 
-                {/* Scrollable Content Area */}
                 <div style={{ 
                     flex: 1, 
                     display: "flex", 
@@ -341,27 +332,24 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
                     overflow: "hidden"
                 }}>
                     {total > 0 && (
-                        <div style={{ fontSize: "11px", color: "#888", marginBottom: "0.35rem" }}>
+                        <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "0.35rem" }}>
                             Celkem: {total}
                             {baseItems.length > 0 && baseItems.length < total ? ` · zobrazeno ${baseItems.length}` : null}
                         </div>
                     )}
 
-                    {/* Loading */}
                     {loading && baseItems.length === 0 && (
-                        <div style={{ textAlign: "center", padding: "2rem", color: "#666" }}>
+                        <div style={{ textAlign: "center", padding: "2rem", color: "var(--muted)" }}>
                             Načítání...
                         </div>
                     )}
 
-                    {/* Error */}
                     {error && (
-                        <div style={{ color: "#FF6262", padding: "1rem" }}>
+                        <div style={{ color: "var(--danger)", padding: "1rem" }}>
                             Chyba: {error.message}
                         </div>
                     )}
 
-                    {/* Items List */}
                     {!error && (baseItems.length > 0 || !loading) && (
                         <div style={{ 
                             display: "flex", 
@@ -372,7 +360,7 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
                             paddingRight: "4px" // Space for scrollbar
                         }}>
                             {baseItems.length === 0 ? (
-                                <div style={{ textAlign: "center", padding: "2rem", color: "#666" }}>
+                                <div style={{ textAlign: "center", padding: "2rem", color: "var(--muted)" }}>
                                     {debouncedSearch
                                         ? `Žádné položky nenalezeny pro „${debouncedSearch}“`
                                         : "Žádné položky neodpovídají filtru nebo už jsou v této inventuře."}
@@ -402,16 +390,15 @@ export default function BaseItemPicker({ isOpen, onClose, onSelectBaseItem }) {
                     )}
                 </div>
 
-                {/* Fixed Footer - Actions */}
                 <div style={{ 
                     display: "flex", 
                     gap: "0.5rem", 
                     justifyContent: "flex-end", 
                     paddingTop: "0.75rem", 
-                    borderTop: "1px solid #e0e0e0", 
+                    borderTop: "1px solid var(--line)", 
                     marginTop: "0.75rem",
                     flexShrink: 0,
-                    backgroundColor: "white",
+                    backgroundColor: 'var(--surface)',
                     position: "sticky",
                     bottom: 0
                 }}>

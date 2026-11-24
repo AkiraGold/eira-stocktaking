@@ -29,12 +29,12 @@ export default function LinkItemDetailTemplate({
           <div className="p-4 flex flex-col gap-4" style={{ paddingBottom: "6rem" }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 700, fontSize: 16, color: '#000' }}>{item.name}</span>
+                <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--fg)' }}>{item.name}</span>
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('openBaseItemPicker'))}
                   style={{
-                    background: "#f0f0f0",
-                    border: "1px solid #ddd",
+                    background: "var(--skeleton)",
+                    border: "1px solid var(--line)",
                     borderRadius: "8px",
                     padding: "8px 12px",
                     fontSize: "12px",
@@ -48,9 +48,9 @@ export default function LinkItemDetailTemplate({
                   Změnit základní položku
                 </button>
               </div>
-              <div style={{ fontSize: 12, color: "#535353" }}>{item.description}</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>{item.description}</div>
             </div>
-            <div style={{ width: '100%', height: 2, background: '#F0F1F3' }} />
+            <div style={{ width: '100%', height: 2, background: 'var(--surface-2)' }} />
             <TextInput
               value={item.note || ""}
               onChange={e => onEditItemChange({ ...item, note: e.target.value })}
@@ -69,7 +69,7 @@ export default function LinkItemDetailTemplate({
               editMode={false}
             />
             {item.baseItemId && !getEffectiveInvNumber(item) && (
-              <div style={{ fontSize: 12, color: "#FF6262" }}>
+              <div style={{ fontSize: 12, color: "var(--danger)" }}>
                 Položka nemá inventární číslo — nelze ji propojit.
               </div>
             )}
@@ -89,8 +89,7 @@ export default function LinkItemDetailTemplate({
                 ))}
               </CardContainer>
             )}
-            {/* Show ID without "last modified" */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontStyle: 'italic', color: '#535353' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontStyle: 'italic', color: 'var(--muted)' }}>
               <div>ID {item.id}</div>
             </div>
           </div>

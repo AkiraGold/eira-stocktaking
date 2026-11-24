@@ -6,10 +6,10 @@ export default function PageLoadingScreen({ message = "Načítání..." }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#f0f1f3",
+        background: "var(--surface-2)",
       }}
     >
-      <div style={{ fontSize: "1rem", color: "#666" }}>{message}</div>
+      <div style={{ fontSize: "1rem", color: "var(--muted)" }}>{message}</div>
     </div>
   );
 }

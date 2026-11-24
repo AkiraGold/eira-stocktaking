@@ -3,21 +3,22 @@ import CardItemName from "@/components/atoms/CardItemName";
 import CardItemDescription from "@/components/atoms/CardItemDescription";
 import CardItemNote from "@/components/atoms/CardItemNote";
 import CardItemDate from "@/components/atoms/CardItemDate";
+import StateBadge from "@/components/atoms/StateBadge";
 import { useItemImage } from "@/hooks/useItemImage";
 import { INVENTORY_STATES } from "@/utils/inventoryStates";
 
-// Map state to background color - using subtle, professional colors
 const stateBgColors = {
-  [INVENTORY_STATES.NOT_FOUND]: "#fbe9e9",
-  [INVENTORY_STATES.FOUND]: "#e7f6ec",
-  [INVENTORY_STATES.MOVED]: "#e8f1fc",
-  [INVENTORY_STATES.NEW]: "#e6f4f1",
-  [INVENTORY_STATES.UNCHECKED]: "#eef1f5",
+  [INVENTORY_STATES.NOT_FOUND]: "var(--st-no-bg)",
+  [INVENTORY_STATES.FOUND]: "var(--st-ok-bg)",
+  [INVENTORY_STATES.MOVED]: "var(--st-mv-bg)",
+  [INVENTORY_STATES.NEW]: "var(--st-new-bg)",
+  [INVENTORY_STATES.UNCHECKED]: "var(--st-un-bg)",
 };
 
 export default function StocktakingItemCard({
   item,
   renderActions,
+  renderQuickActions,
   compact = false,
   imagesResolvedForCurrentPage = false,
   enableLazyImageFetch = false,
@@ -67,7 +68,6 @@ export default function StocktakingItemCard({
       className={compact ? "flex flex-col rounded-2xl overflow-hidden p-4" : "flex flex-col rounded-2xl overflow-hidden h-full"}
       style={{ background: bgColor }}
     >
-      {/* Image (only in full mode) */}
       {showImage && (
         <div style={{ position: "relative", width: "100%", height: 100, flexShrink: 0 }}>
           {!imageLoaded && (
@@ -76,7 +76,7 @@ export default function StocktakingItemCard({
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%)",
+                background: "linear-gradient(90deg, var(--skeleton) 25%, var(--skeleton-hi) 50%, var(--skeleton) 75%)",
                 backgroundSize: "200% 100%"
               }}
             />
@@ -104,7 +104,7 @@ export default function StocktakingItemCard({
           style={{
             width: "100%",
             height: 100,
-            background: "linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%)",
+            background: "linear-gradient(90deg, var(--skeleton) 25%, var(--skeleton-hi) 50%, var(--skeleton) 75%)",
             backgroundSize: "200% 100%"
           }}
         />
@@ -117,8 +117,8 @@ export default function StocktakingItemCard({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "#e5e7eb",
-            color: "#9ca3af"
+            background: "var(--skeleton)",
+            color: "var(--muted)"
           }}
           aria-label="No image available"
         >
@@ -134,25 +134,28 @@ export default function StocktakingItemCard({
           100% { background-position: -200% 0; }
         }
       `}</style>
-      {/* Content */}
       <div className={compact ? "flex flex-col gap-1" : "p-4 flex flex-col justify-between flex-grow"}>
-        {/* First part */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <CardItemName>{item.name}</CardItemName>
             {renderActions && renderActions(item)}
           </div>
           <CardItemDescription>{item.description}</CardItemDescription>
+          {useStateColor && item.state ? (
+            <div style={{ marginTop: 6 }}>
+              <StateBadge state={item.state} />
+            </div>
+          ) : null}
           {showInventoryDetails ? (
             <CardItemNote showLabel={false}>{item.note}</CardItemNote>
           ) : null}
         </div>
-        {/* Second part */}
         {showInventoryDetails ? (
           <CardItemDate>
             Poslední kontrola {item.lastCheck ? new Date(item.lastCheck).toLocaleString() : ""}
           </CardItemDate>
         ) : null}
+        {renderQuickActions ? renderQuickActions(item) : null}
       </div>
     </div>
   );

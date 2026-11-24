@@ -17,21 +17,21 @@ export default function LocationModalTrigger({ onClick, location, editMode = tru
   const content = (
     <>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-        <div style={{ color: "#535353", fontWeight: 500, fontSize: 14, marginBottom: 2 }}>
+        <div style={{ color: "var(--muted)", fontWeight: 500, fontSize: 14, marginBottom: 2 }}>
           {label}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span className="material-icons-round" style={{ fontSize: 14, color: "#000" }}>
+          <span className="material-icons-round" style={{ fontSize: 14, color: 'var(--fg)' }}>
             location_on
           </span>
-          <span style={{ fontWeight: 700, fontSize: 12, color: "#000" }}>
+          <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--fg)' }}>
             {buildingText}, {storeyText}, {roomText}
           </span>
         </div>
       </div>
       {editMode && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 8 }}>
-          <span className="material-icons-round" style={{ fontSize: 14, color: "#000" }}>
+          <span className="material-icons-round" style={{ fontSize: 14, color: 'var(--fg)' }}>
             edit
           </span>
         </div>

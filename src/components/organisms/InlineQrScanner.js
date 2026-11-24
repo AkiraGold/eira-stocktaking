@@ -82,7 +82,7 @@ export default function InlineQrScanner({ active, onScan, validate, wrapperStyle
     return (
         <div
             style={{
-                background: "#fff",
+                background: 'var(--surface)',
                 textAlign: "center",
                 position: "relative",
                 width: "100%",
@@ -90,7 +90,7 @@ export default function InlineQrScanner({ active, onScan, validate, wrapperStyle
                 flexDirection: "column",
                 borderRadius: "16px",
                 overflow: "hidden",
-                border: "1px solid #e0e0e0",
+                border: "1px solid var(--line)",
                 flex: 1,
                 minHeight: 0,
                 ...(wrapperStyle || {}),
@@ -121,14 +121,14 @@ export default function InlineQrScanner({ active, onScan, validate, wrapperStyle
             </div>
             <div
                 style={{
-                    color: "#333",
+                    color: "var(--fg)",
                     whiteSpace: "pre-line",
                     fontSize: "0.875rem",
                     padding: "0.75rem",
                     minHeight: "40px",
                     flexShrink: 0,
                     fontWeight: 500,
-                    background: "#f8f9fa",
+                    background: "var(--surface-2)",
                 }}
             >
                 {displayMessage}

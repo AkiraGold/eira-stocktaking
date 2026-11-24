@@ -12,7 +12,7 @@ export default function StocktakingLinkItemPage() {
   if (!Number.isFinite(stocktakingId) || stocktakingId <= 0) {
     return (
       <main className="relative min-h-screen flex flex-col items-center p-4">
-        <p style={{ color: "#FF6262", fontWeight: 600 }}>
+        <p style={{ color: "var(--danger)", fontWeight: 600 }}>
           Neplatná inventura (chybí nebo je neplatné ID).
         </p>
       </main>

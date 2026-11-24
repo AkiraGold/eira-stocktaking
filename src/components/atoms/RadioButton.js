@@ -31,7 +31,7 @@ export default function RadioButton({
                     width: 14,
                     height: 14,
                     borderRadius: '50%',
-                    background: '#000',
+                    background: 'var(--fg)',
                     position: 'relative',
                     marginLeft: 12,
                     ...radioStyle
@@ -48,7 +48,7 @@ export default function RadioButton({
                         width: checked ? 6 : 10,
                         height: checked ? 6 : 10,
                         borderRadius: '50%',
-                        background: '#fff',
+                        background: 'var(--surface)',
                         transition: 'width 0.15s, height 0.15s',
                     }}
                 />

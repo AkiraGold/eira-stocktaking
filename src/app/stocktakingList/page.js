@@ -36,6 +36,17 @@ export default function StocktakingOperationsList() {
         sortOrder: sortOrder,
     });
 
+    // Řízení režimu z EIRA (krok 5), aktivovat po úpravě v EIRA spolu s blokem v hooks/useSettings.js:
+    // nastavení inventury (režim Pracovní) se může změnit, proto obnovíme uloženou kopii.
+    // useEffect(() => {
+    //     if (!selectedInventura?.id || !operations.length) return;
+    //     const fresh = operations.find((op) => String(op.id) === String(selectedInventura.id));
+    //     if (!fresh) return;
+    //     const merged = { ...selectedInventura, ...fresh, state: EVENT_STATE_INITIATED, stateLabel: "Zahájený" };
+    //     if (JSON.stringify(merged) !== JSON.stringify(selectedInventura)) selectInventura(merged);
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [operations]);
+
     const totalPages = total > 0 ? Math.ceil(total / itemsPerPage) : 1;
 
     const handleInventuraClick = (op) => {
@@ -49,7 +60,7 @@ export default function StocktakingOperationsList() {
 
     return (
         <div className="relative min-h-screen flex flex-col items-center">
-            <main className="container" style={{ minHeight: "100vh", background: "#fff", display: "flex", padding: "1rem", flexDirection: "column", gap: "1rem" }}>
+            <main className="container" style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", padding: "1rem", flexDirection: "column", gap: "1rem" }}>
                 <HeadingCard
                     heading="Seznam inventur"
                     leftActions={[headingBackAction(HOME_PATH)]}
@@ -63,9 +74,9 @@ export default function StocktakingOperationsList() {
                         style={{
                             padding: "12px 14px",
                             borderRadius: 12,
-                            background: "#fff4f4",
-                            border: "1px solid #ffc9c9",
-                            color: "#8a1f1f",
+                            background: "var(--st-no-bg)",
+                            border: "1px solid var(--st-no-bg)",
+                            color: "var(--danger)",
                             fontSize: 13,
                             lineHeight: 1.45,
                         }}
@@ -77,7 +88,7 @@ export default function StocktakingOperationsList() {
                 {loading ? <div>Načítání...</div> : null}
                 {error ? <div>Chyba: {error.message}</div> : null}
                 {!loading && !error && operations.length === 0 ? (
-                    <div style={{ color: "#535353", fontSize: 14 }}>
+                    <div style={{ color: "var(--muted)", fontSize: 14 }}>
                         Žádná inventura ve stavu Zahájený.
                     </div>
                 ) : null}
